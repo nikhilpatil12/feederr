@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:feederr/models/articles.dart';
-import 'package:feederr/utils/db_utils.dart';
+import 'package:feederr/models/article.dart';
+import 'package:feederr/utils/api_utils.dart';
+import 'package:feederr/utils/dbhelper.dart';
 import 'package:flutter/material.dart';
 import 'package:feederr/utils/utils.dart';
 
@@ -94,6 +95,7 @@ class ArticleList extends StatefulWidget {
 class _ArticleListState extends State<ArticleList> {
   List<Article> articles = [];
   bool isLoading = false;
+  DatabaseService databaseService = DatabaseService();
 
   @override
   void initState() {
@@ -106,7 +108,12 @@ class _ArticleListState extends State<ArticleList> {
       isLoading = true;
     });
     try {
-      articles = await FetchArticles();
+      // articles = await fetchArticles();
+      // for (Article article in articles) {
+      //   DatabaseService databaseService = DatabaseService();
+      //   databaseService.insertArticle(article);
+      // }
+      articles = await databaseService.articles();
     } on DioException catch (e) {
       // Handle error
     } finally {

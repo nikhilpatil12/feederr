@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/home.dart';
 
-//import 'package:google_mobile_ads/google_mobile_ads.dart';
-
 void main() {
   runApp(const MyApp());
 }
@@ -16,6 +14,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: "App",
       theme: ThemeData(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         colorScheme: const ColorScheme(
             primary: Color.fromRGBO(76, 2, 232, 1),
             brightness: Brightness.dark,

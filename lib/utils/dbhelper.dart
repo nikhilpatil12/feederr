@@ -1,9 +1,9 @@
-import 'package:feederr/models/servers.dart';
-import 'package:feederr/models/articles.dart';
+import 'package:feederr/models/server.dart';
+import 'package:feederr/models/article.dart';
 import 'package:feederr/models/new.dart';
 import 'package:feederr/models/starred.dart';
-import 'package:feederr/models/tags.dart';
-import 'package:feederr/models/feed_list.dart';
+import 'package:feederr/models/tag.dart';
+import 'package:feederr/models/feed.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -45,22 +45,22 @@ class DatabaseService {
     // Run the CREATE {all_articles} TABLE statement on the database.
     // 'CREATE TABLE all_articles(id INTEGER PRIMARY KEY, title TEXT, article TEXT)',
     await db.execute(
-        'CREATE TABLE articles(id INTEGER, id2 TEXT, crawlTimeMsec TEXT, timestampUsec TEXT, published TEXT, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT');
+        'CREATE TABLE articles(id INTEGER, id2 TEXT, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT)');
     // Run the CREATE {starred} TABLE statement on the database.
     await db.execute(
-      'CREATE TABLE starred_ids(FOREIGN KEY (articleId) REFERENCES all_articles(id) ON DELETE SET NULL)',
+      'CREATE TABLE starred_ids(articleId INTEGER, FOREIGN KEY (articleId) REFERENCES all_articles(id) ON DELETE SET NULL)',
     );
     await db.execute(
-      'CREATE TABLE new_ids(FOREIGN KEY (articleId) REFERENCES all_articles(id) ON DELETE SET NULL)',
+      'CREATE TABLE new_ids(articleId INTEGER, FOREIGN KEY (articleId) REFERENCES all_articles(id) ON DELETE SET NULL)',
     );
     await db.execute(
       'CREATE TABLE tag_list(id TEXT PRIMARY KEY, type TEXT, count INTEGER)',
     );
     await db.execute(
-      'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT',
+      'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT)',
     );
     await db.execute(
-      'CREATE TABLE server_list(id INTEGER PRIMARY KEY, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT',
+      'CREATE TABLE server_list(id INTEGER PRIMARY KEY, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT)',
     );
   }
 
@@ -134,7 +134,8 @@ class DatabaseService {
     final List<Map<String, dynamic>> maps = await db.query('articles');
 
     // Convert the List<Map<String, dynamic> into a List<Article>.
-    return List.generate(maps.length, (index) => Article.fromMap(maps[index]));
+    return List.generate(
+        maps.length, (index) => Article.fromDBMap(maps[index]));
   }
 
   Future<Article> article(int id) async {
@@ -194,6 +195,19 @@ class DatabaseService {
     final List<Map<String, dynamic>> maps =
         await db.query('server_list', where: 'id = ?', whereArgs: [id]);
     return Server.fromMap(maps[0]);
+  }
+
+  Future<Server?> serverByUrlAndUsername(
+      String baseUrl, String userName) async {
+    final db = await _databaseService.database;
+
+    final List<Map<String, dynamic>> maps = await db.query('server_list',
+        where: 'baseUrl = ? AND userName = ?', whereArgs: [baseUrl, userName]);
+    if (maps.isNotEmpty) {
+      return Server.fromMap(maps[0]);
+    } else {
+      return null;
+    }
   }
 
   // A method that updates a article data from the articles table.
@@ -278,5 +292,11 @@ class DatabaseService {
   Future<void> deleteServer(int id) async {
     final db = await _databaseService.database;
     await db.delete('server_list', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteServerByUrlAndUser(String baseUrl, String userName) async {
+    final db = await _databaseService.database;
+    await db.delete('server_list',
+        where: 'baseUrl = ? AND userName = ?', whereArgs: [baseUrl, userName]);
   }
 }

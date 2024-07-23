@@ -1,20 +1,59 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:feederr/models/feed.dart';
+import 'package:feederr/models/server.dart';
+import 'package:feederr/pages/add_server.dart';
 import 'package:feederr/pages/all_articles.dart';
 import 'package:feederr/pages/fav_articles.dart';
 import 'package:feederr/pages/new_articles.dart';
+import 'package:feederr/utils/api_utils.dart';
+import 'package:feederr/utils/dbhelper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
-import 'settings.dart';
-import 'article_list.dart';
-// import '../utils/dbhelper.dart';
+import 'package:feederr/pages/settings.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title});
-
   final String title;
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  List<Feed> feeds = [];
+  bool isLoading = false;
+  DatabaseService databaseService = DatabaseService();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFeedList();
+  }
+
+  Future<void> _fetchFeedList() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      List<Server> serverList = await databaseService.servers();
+      String baseUrl = serverList[0].baseUrl;
+      String auth = serverList[0].auth ?? '';
+      feeds = await fetchFeedList(baseUrl, auth) ?? [];
+      for (Feed feed in feeds) {
+        databaseService.insertFeed(feed);
+      }
+      feeds = await databaseService.feeds();
+      print(feeds.length);
+    } on DioException catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,21 +62,19 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(widget.title),
         actions: <Widget>[
           GestureDetector(
-            child: const Icon(CupertinoIcons.add_circled),
+            child: const Icon(CupertinoIcons.add),
             onTap: () {
-              //TODO: Add feeds
-              // userLogin(); CustomListItemApp
               Navigator.push(context, MaterialPageRoute<void>(
                 //TODO: Settings
                 builder: (BuildContext context) {
                   return Scaffold(
                     appBar: AppBar(
-                      title: const Text('Articles'),
+                      title: const Text('Add Servers'),
                     ),
-                    body: const ArticleList(),
+                    body: const ServerList(),
                   );
                 },
               ));

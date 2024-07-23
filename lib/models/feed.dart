@@ -5,7 +5,7 @@ class Feed {
   final String title;
   final String categories;
   final String url;
-  final String originHtmlUrl;
+  final String htmlUrl;
   final String iconUrl;
 
   Feed({
@@ -13,7 +13,7 @@ class Feed {
     required this.title,
     required this.categories,
     required this.url,
-    required this.originHtmlUrl,
+    required this.htmlUrl,
     required this.iconUrl,
   });
 
@@ -24,9 +24,9 @@ class Feed {
       'id': id,
       'title': title,
       'categories': categories,
-      'origin_streamId': url,
-      'origin_htmlUrl': originHtmlUrl,
-      'origin_title': iconUrl
+      'url': url,
+      'htmlUrl': htmlUrl,
+      'iconUrl': iconUrl
     };
   }
 
@@ -34,10 +34,10 @@ class Feed {
     return Feed(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
-      categories: map['categories'] ?? '',
+      categories: map['categories'].toString(),
       url: map['url'] ?? '',
-      originHtmlUrl: map['origin_htmlUrl'] ?? '',
-      iconUrl: map['icon_url'] ?? '',
+      htmlUrl: map['htmlUrl'] ?? '',
+      iconUrl: map['iconUrl'] ?? '',
     );
   }
 
@@ -49,5 +49,5 @@ class Feed {
   // each article when using the print statement.
   @override
   String toString() =>
-      'Feed(id: $id, title: $title, categories:$categories, url: $url, origin_htmlUrl: $originHtmlUrl, icon_url:$iconUrl)';
+      'Feed(id: $id, title: $title, categories:$categories, url: $url, htmlUrl: $htmlUrl, icon_url:$iconUrl)';
 }

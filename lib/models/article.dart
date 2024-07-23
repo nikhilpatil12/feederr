@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class Article {
   final String? id;
-  final String id2;
+  final String? id2;
   final String crawlTimeMsec;
   final String timestampUsec;
   final int published;
@@ -18,8 +18,8 @@ class Article {
   final String imageUrl;
 
   Article({
-    this.id,
-    required this.id2,
+    required this.id,
+    this.id2,
     required this.crawlTimeMsec,
     required this.timestampUsec,
     required this.published,
@@ -76,6 +76,25 @@ class Article {
       imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
     );
   }
+  factory Article.fromDBMap(Map<String, dynamic> map) {
+    return Article(
+      id: map['id'] ?? '',
+      id2: map['id2'] ?? '',
+      crawlTimeMsec: map['crawlTimeMsec'] ?? '',
+      timestampUsec: map['timestampUsec'] ?? '',
+      published: map['published'] ?? 0,
+      title: map['title'] ?? '',
+      canonical: map['canonical'] ?? '',
+      alternate: map['alternate'] ?? '',
+      categories: map['categories'].toString(),
+      originStreamId: map['originStreamId'] ?? '',
+      originHtmlUrl: map['originHtmlUrl'] ?? '',
+      originTitle: map['originTitle'] ?? '',
+      summaryContent: map['summarContent'] ?? '',
+      author: map['author'] ?? '',
+      imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
+    );
+  }
 
   String toJson() => json.encode(toMap());
 
@@ -86,5 +105,5 @@ class Article {
   // each article when using the print statement.
   @override
   String toString() =>
-      'Article(id: $id, id2: $id2, crawlTimeMsec: $crawlTimeMsec, timestampUsec: $timestampUsec, published: $published, title: $title, canonical:$canonical, alternate:$alternate, categories:$categories, originStreamId: $originStreamId, originHtmlUrl: $originHtmlUrl, originTitle:$originTitle, summaryContent:$summaryContent, author:$author)';
+      'Article(id: $id, id2: $id2, crawlTimeMsec: $crawlTimeMsec, timestampUsec: $timestampUsec, published: $published, title: $title, canonical:$canonical, alternate:$alternate, categories:$categories, originStreamId: $originStreamId, originHtmlUrl: $originHtmlUrl, originTitle:$originTitle, summaryContent:$summaryContent, author:$author, imageUrl:$imageUrl)';
 }

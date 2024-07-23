@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:feederr/models/feed_list.dart';
+import 'package:feederr/models/feed.dart';
 import 'package:flutter/material.dart';
 
 class AllArticleList extends StatelessWidget {
