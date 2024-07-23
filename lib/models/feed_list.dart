@@ -5,16 +5,16 @@ class Feed {
   final String title;
   final String categories;
   final String url;
-  final String origin_htmlUrl;
-  final String icon_url;
+  final String originHtmlUrl;
+  final String iconUrl;
 
   Feed({
     required this.id,
     required this.title,
     required this.categories,
     required this.url,
-    required this.origin_htmlUrl,
-    required this.icon_url,
+    required this.originHtmlUrl,
+    required this.iconUrl,
   });
 
   // Convert a Feed into a Map. The keys must correspond to the names of the
@@ -25,8 +25,8 @@ class Feed {
       'title': title,
       'categories': categories,
       'origin_streamId': url,
-      'origin_htmlUrl': origin_htmlUrl,
-      'origin_title': icon_url
+      'origin_htmlUrl': originHtmlUrl,
+      'origin_title': iconUrl
     };
   }
 
@@ -36,8 +36,8 @@ class Feed {
       title: map['title'] ?? '',
       categories: map['categories'] ?? '',
       url: map['url'] ?? '',
-      origin_htmlUrl: map['origin_htmlUrl'] ?? '',
-      icon_url: map['icon_url'] ?? '',
+      originHtmlUrl: map['origin_htmlUrl'] ?? '',
+      iconUrl: map['icon_url'] ?? '',
     );
   }
 
@@ -49,5 +49,5 @@ class Feed {
   // each article when using the print statement.
   @override
   String toString() =>
-      'Feed(id: $id, title: $title, categories:$categories, url: $url, origin_htmlUrl: $origin_htmlUrl, icon_url:$icon_url)';
+      'Feed(id: $id, title: $title, categories:$categories, url: $url, origin_htmlUrl: $originHtmlUrl, icon_url:$iconUrl)';
 }

@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
-import 'package:feederr/models/articles.dart';
 import 'package:feederr/models/feed_list.dart';
 import 'package:flutter/material.dart';
 
@@ -30,8 +28,8 @@ Future<List<Feed>> fetchAllFeeds() async {
     );
 
     if (response.statusCode == 200) {
-      return response.data;
       print(json.encode(response.data));
+      return response.data;
     } else {
       print(response.statusMessage);
     }

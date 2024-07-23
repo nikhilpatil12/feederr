@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'settings.dart';
+import 'article_list.dart';
 // import '../utils/dbhelper.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -28,7 +29,18 @@ class HomeScreen extends StatelessWidget {
             child: const Icon(CupertinoIcons.add_circled),
             onTap: () {
               //TODO: Add feeds
-              userLogin();
+              // userLogin(); CustomListItemApp
+              Navigator.push(context, MaterialPageRoute<void>(
+                //TODO: Settings
+                builder: (BuildContext context) {
+                  return Scaffold(
+                    appBar: AppBar(
+                      title: const Text('Articles'),
+                    ),
+                    body: const ArticleList(),
+                  );
+                },
+              ));
             },
           ),
           GestureDetector(
@@ -37,7 +49,6 @@ class HomeScreen extends StatelessWidget {
               child: Icon(CupertinoIcons.settings_solid),
             ),
             onTap: () {
-              //TODO: Add feeds
               Navigator.push(context, MaterialPageRoute<void>(
                 //TODO: Settings
                 builder: (BuildContext context) {
@@ -103,9 +114,9 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       title: ("Starred"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
-      activeColorSecondary: const Color.fromARGB(255, 38, 0, 255),
+      activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
       routeAndNavigatorSettings: RouteAndNavigatorSettings(
-        initialRoute: "/",
+        initialRoute: "/new",
         routes: currentRoutes,
       ),
     ),
@@ -114,9 +125,9 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       title: ("New"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
-      activeColorSecondary: const Color.fromARGB(255, 38, 0, 255),
+      activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
       routeAndNavigatorSettings: RouteAndNavigatorSettings(
-        initialRoute: "/",
+        initialRoute: "/new",
         routes: currentRoutes,
       ),
     ),
@@ -125,9 +136,9 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       title: ("All"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
-      activeColorSecondary: const Color.fromARGB(255, 38, 0, 255),
+      activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
       routeAndNavigatorSettings: RouteAndNavigatorSettings(
-        initialRoute: "/",
+        initialRoute: "/new",
         routes: currentRoutes,
       ),
     ),

@@ -1,10 +1,9 @@
 import 'package:feederr/models/servers.dart';
-
-import '../models/articles.dart';
-import '../models/new.dart';
-import '../models/starred.dart';
-import '../models/tags.dart';
-import '../models/feed_list.dart';
+import 'package:feederr/models/articles.dart';
+import 'package:feederr/models/new.dart';
+import 'package:feederr/models/starred.dart';
+import 'package:feederr/models/tags.dart';
+import 'package:feederr/models/feed_list.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -61,7 +60,7 @@ class DatabaseService {
       'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT',
     );
     await db.execute(
-      'CREATE TABLE server_list(id INTEGER PRIMARY KEY, baseUrl TEXT, userName TEXT, password TEXT',
+      'CREATE TABLE server_list(id INTEGER PRIMARY KEY, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT',
     );
   }
 

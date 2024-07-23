@@ -17,10 +17,10 @@ class MyApp extends StatelessWidget {
       title: "App",
       theme: ThemeData(
         colorScheme: const ColorScheme(
-            primary: Color.fromRGBO(0, 0, 200, 1),
+            primary: Color.fromRGBO(76, 2, 232, 1),
             brightness: Brightness.dark,
             onPrimary: Color.fromRGBO(205, 205, 205, 1),
-            secondary: Color.fromRGBO(0, 255, 179, 1),
+            secondary: Color.fromRGBO(60, 254, 207, 1),
             onSecondary: Color.fromRGBO(255, 0, 183, 1),
             error: Color.fromRGBO(205, 0, 0, 1),
             onError: Color.fromRGBO(255, 255, 255, 1),
