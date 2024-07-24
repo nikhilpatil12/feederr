@@ -111,7 +111,7 @@ class ServerFormState extends State<ServerForm> {
             ],
           ),
           SizedBox(
-            width: double.infinity - 500.0,
+            width: 390,
             child: CupertinoButton.filled(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
@@ -126,11 +126,11 @@ class ServerFormState extends State<ServerForm> {
                     } else {
                       Fluttertoast.showToast(
                           msg:
-                              "Server and user already exist. You can choose edit them instead",
+                              "Server and user already exist. You can edit them instead",
                           toastLength: Toast.LENGTH_SHORT,
                           gravity: ToastGravity.BOTTOM,
                           timeInSecForIosWeb: 2,
-                          backgroundColor: Color.fromRGBO(144, 36, 60, 1),
+                          backgroundColor: const Color.fromRGBO(144, 36, 60, 1),
                           textColor: Colors.white,
                           fontSize: 16.0);
                     }
@@ -147,7 +147,7 @@ class ServerFormState extends State<ServerForm> {
                           toastLength: Toast.LENGTH_SHORT,
                           gravity: ToastGravity.BOTTOM,
                           timeInSecForIosWeb: 1,
-                          backgroundColor: Color.fromRGBO(76, 2, 232, 1),
+                          backgroundColor: const Color.fromRGBO(76, 2, 232, 1),
                           textColor: Colors.white,
                           fontSize: 16.0);
                       databaseService.insertServer(
@@ -164,7 +164,7 @@ class ServerFormState extends State<ServerForm> {
                           toastLength: Toast.LENGTH_SHORT,
                           gravity: ToastGravity.BOTTOM,
                           timeInSecForIosWeb: 2,
-                          backgroundColor: Color.fromRGBO(144, 36, 60, 1),
+                          backgroundColor: const Color.fromRGBO(144, 36, 60, 1),
                           textColor: Colors.white,
                           fontSize: 16.0);
                     }

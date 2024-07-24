@@ -1,22 +1,23 @@
 import 'package:feederr/models/article.dart';
+import 'package:feederr/models/tag.dart';
 import 'package:feederr/widgets/article.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class FavArticleList extends StatefulWidget {
+class StarredArticles extends StatefulWidget {
   final VoidCallback refreshParent;
-  final List<Article> articles;
-  const FavArticleList({
+  final List<Tag> tags;
+  const StarredArticles({
     super.key,
     required this.refreshParent,
-    required this.articles,
+    required this.tags,
   });
 
   @override
-  State<FavArticleList> createState() => _FavArticleListState();
+  State<StarredArticles> createState() => _StarredArticlesState();
 }
 
-class _FavArticleListState extends State<FavArticleList> {
+class _StarredArticlesState extends State<StarredArticles> {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class Article {
   final String? id;
-  final String? id2;
+  final int? id2;
   final String crawlTimeMsec;
   final String timestampUsec;
   final int published;
@@ -15,7 +15,8 @@ class Article {
   final String originTitle;
   final String summaryContent;
   final String author;
-  final String imageUrl;
+  String imageUrl;
+  final int serverId;
 
   Article({
     required this.id,
@@ -33,6 +34,7 @@ class Article {
     required this.summaryContent,
     required this.author,
     required this.imageUrl,
+    required this.serverId,
   });
 
   // Convert a Article into a Map. The keys must correspond to the names of the
@@ -54,13 +56,14 @@ class Article {
       'summary_content': summaryContent,
       'author': author,
       'imageUrl': imageUrl,
+      'serverId': serverId,
     };
   }
 
   factory Article.fromMap(Map<String, dynamic> map) {
     return Article(
       id: map['id'] ?? '',
-      id2: map['id2'] ?? '',
+      id2: map['id2'] ?? 0,
       crawlTimeMsec: map['crawlTimeMsec'] ?? '',
       timestampUsec: map['timestampUsec'] ?? '',
       published: map['published'] ?? 0,
@@ -74,12 +77,13 @@ class Article {
       summaryContent: map['summary']['content'] ?? '',
       author: map['author'] ?? '',
       imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
+      serverId: map['serverId'] ?? 0,
     );
   }
   factory Article.fromDBMap(Map<String, dynamic> map) {
     return Article(
       id: map['id'] ?? '',
-      id2: map['id2'] ?? '',
+      id2: map['id2'] ?? 0,
       crawlTimeMsec: map['crawlTimeMsec'] ?? '',
       timestampUsec: map['timestampUsec'] ?? '',
       published: map['published'] ?? 0,
@@ -93,6 +97,7 @@ class Article {
       summaryContent: map['summarContent'] ?? '',
       author: map['author'] ?? '',
       imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
+      serverId: map['serverId'] ?? 0,
     );
   }
 
@@ -105,5 +110,5 @@ class Article {
   // each article when using the print statement.
   @override
   String toString() =>
-      'Article(id: $id, id2: $id2, crawlTimeMsec: $crawlTimeMsec, timestampUsec: $timestampUsec, published: $published, title: $title, canonical:$canonical, alternate:$alternate, categories:$categories, originStreamId: $originStreamId, originHtmlUrl: $originHtmlUrl, originTitle:$originTitle, summaryContent:$summaryContent, author:$author, imageUrl:$imageUrl)';
+      'Article(id: $id, id2: $id2, crawlTimeMsec: $crawlTimeMsec, timestampUsec: $timestampUsec, published: $published, title: $title, canonical:$canonical, alternate:$alternate, categories:$categories, originStreamId: $originStreamId, originHtmlUrl: $originHtmlUrl, originTitle:$originTitle, summaryContent:$summaryContent, author:$author, imageUrl:$imageUrl, serverId:$serverId)';
 }

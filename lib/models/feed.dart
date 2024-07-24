@@ -7,6 +7,7 @@ class Feed {
   final String url;
   final String htmlUrl;
   final String iconUrl;
+  int serverId;
 
   Feed({
     required this.id,
@@ -15,6 +16,7 @@ class Feed {
     required this.url,
     required this.htmlUrl,
     required this.iconUrl,
+    required this.serverId,
   });
 
   // Convert a Feed into a Map. The keys must correspond to the names of the
@@ -26,7 +28,8 @@ class Feed {
       'categories': categories,
       'url': url,
       'htmlUrl': htmlUrl,
-      'iconUrl': iconUrl
+      'iconUrl': iconUrl,
+      'serverId': serverId,
     };
   }
 
@@ -38,6 +41,7 @@ class Feed {
       url: map['url'] ?? '',
       htmlUrl: map['htmlUrl'] ?? '',
       iconUrl: map['iconUrl'] ?? '',
+      serverId: map['serverId'] ?? 0,
     );
   }
 
@@ -49,5 +53,5 @@ class Feed {
   // each article when using the print statement.
   @override
   String toString() =>
-      'Feed(id: $id, title: $title, categories:$categories, url: $url, htmlUrl: $htmlUrl, icon_url:$iconUrl)';
+      'Feed(id: $id, title: $title, categories:$categories, url: $url, htmlUrl: $htmlUrl, icon_url:$iconUrl, serverId:$serverId)';
 }

@@ -67,10 +67,10 @@ class ServerList extends StatefulWidget {
   const ServerList({super.key});
 
   @override
-  _ServerListState createState() => _ServerListState();
+  ServerListState createState() => ServerListState();
 }
 
-class _ServerListState extends State<ServerList> {
+class ServerListState extends State<ServerList> {
   List<Server> servers = [];
 
   bool isLoading = false;
@@ -81,9 +81,9 @@ class _ServerListState extends State<ServerList> {
     setState(() {});
   }
 
-  TextEditingController _controller1 = TextEditingController();
-  TextEditingController _controller2 = TextEditingController();
-  TextEditingController _controller3 = TextEditingController();
+  final TextEditingController _controller1 = TextEditingController();
+  final TextEditingController _controller2 = TextEditingController();
+  final TextEditingController _controller3 = TextEditingController();
 
   void _editForm(String f1, String f2, String f3) {
     setState(() {
@@ -177,8 +177,8 @@ class _ServerListState extends State<ServerList> {
                                         toastLength: Toast.LENGTH_SHORT,
                                         gravity: ToastGravity.BOTTOM,
                                         timeInSecForIosWeb: 1,
-                                        backgroundColor:
-                                            Color.fromRGBO(144, 36, 60, 1),
+                                        backgroundColor: const Color.fromRGBO(
+                                            144, 36, 60, 1),
                                         textColor: Colors.white,
                                         fontSize: 16.0),
                                     setState(() {})

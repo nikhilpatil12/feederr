@@ -17,7 +17,6 @@ class Server {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'baseUrl': baseUrl,
       'userName': userName,
       'password': password,
@@ -27,7 +26,7 @@ class Server {
 
   factory Server.fromMap(Map<String, dynamic> map) {
     return Server(
-      // id: map['id']?.toInt() ?? 0,
+      id: map['id']?.toInt() ?? 0,
       baseUrl: map['baseUrl'] ?? '',
       userName: map['userName'] ?? '',
       password: map['password'] ?? '',

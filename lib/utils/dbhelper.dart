@@ -1,3 +1,4 @@
+import 'package:feederr/models/tagged_id.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/new.dart';
@@ -42,25 +43,25 @@ class DatabaseService {
   // When the database is first created, create a table to store articles
   // and a table to store NewIds.
   Future<void> _onCreate(Database db, int version) async {
-    // Run the CREATE {all_articles} TABLE statement on the database.
-    // 'CREATE TABLE all_articles(id INTEGER PRIMARY KEY, title TEXT, article TEXT)',
     await db.execute(
-        'CREATE TABLE articles(id INTEGER, id2 TEXT, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT)');
-    // Run the CREATE {starred} TABLE statement on the database.
-    await db.execute(
-      'CREATE TABLE starred_ids(articleId INTEGER, FOREIGN KEY (articleId) REFERENCES all_articles(id) ON DELETE SET NULL)',
+      'CREATE TABLE server_list(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT)',
     );
     await db.execute(
-      'CREATE TABLE new_ids(articleId INTEGER, FOREIGN KEY (articleId) REFERENCES all_articles(id) ON DELETE SET NULL)',
+        'CREATE TABLE articles(id TEXT, id2 INTEGER PRIMARY KEY, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)');
+    await db.execute(
+      'CREATE TABLE starred_ids(articleId INTEGER PRIMARY KEY, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
     await db.execute(
-      'CREATE TABLE tag_list(id TEXT PRIMARY KEY, type TEXT, count INTEGER)',
+      'CREATE TABLE new_ids(articleId INTEGER PRIMARY KEY, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
     await db.execute(
-      'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT)',
+      'CREATE TABLE tag_list(id TEXT PRIMARY KEY, type TEXT, count INTEGER, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
     await db.execute(
-      'CREATE TABLE server_list(id INTEGER PRIMARY KEY, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT)',
+      'CREATE TABLE tagged_ids(articleId INTEGER PRIMARY KEY, serverId INTEGER, tag STRING, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE, FOREIGN KEY (tag) REFERENCES tag_list(id) ON DELETE CASCADE)',
+    );
+    await db.execute(
+      'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
   }
 
@@ -93,6 +94,15 @@ class DatabaseService {
     final db = await _databaseService.database;
     await db.insert(
       'starred_ids',
+      id.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertTaggedId(TaggedId id) async {
+    final db = await _databaseService.database;
+    await db.insert(
+      'tagged_ids',
       id.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -148,14 +158,29 @@ class DatabaseService {
   Future<List<NewId>> newIds() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('new_ids');
-    return List.generate(maps.length, (index) => NewId.fromMap(maps[index]));
+    return List.generate(maps.length, (index) => NewId.fromDBMap(maps[index]));
   }
 
   Future<List<StarredId>> starredIds() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('starred_ids');
     return List.generate(
-        maps.length, (index) => StarredId.fromMap(maps[index]));
+        maps.length, (index) => StarredId.fromDBMap(maps[index]));
+  }
+
+  Future<List<TaggedId>> taggedIds() async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query('tagged_ids');
+    return List.generate(
+        maps.length, (index) => TaggedId.fromDBMap(maps[index]));
+  }
+
+  Future<List<TaggedId>> taggedIdsByTag(String tag) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('tagged_ids', where: 'tag = ?', whereArgs: [tag]);
+    return List.generate(
+        maps.length, (index) => TaggedId.fromDBMap(maps[index]));
   }
 
   Future<List<Tag>> tags() async {
