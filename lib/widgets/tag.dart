@@ -1,22 +1,31 @@
+import 'package:expandable/expandable.dart';
 import 'package:feederr/models/article.dart';
-import 'package:feederr/pages/article_view.dart';
+import 'package:feederr/models/feed.dart';
+import 'package:feederr/models/tag.dart';
 import 'package:feederr/utils/utils.dart';
+import 'package:feederr/widgets/feed.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class ArticleListItem extends StatefulWidget {
-  const ArticleListItem({
+class TagListItem extends StatefulWidget {
+  const TagListItem({
     super.key,
-    required this.article,
+    required this.tag,
+    required this.articles,
+    required this.feeds,
   });
 
-  final Article article;
+  final Tag tag;
+  final List<Article> articles;
+  final List<Feed> feeds;
 
   @override
-  State<ArticleListItem> createState() => _ArticleListItemState();
+  State<TagListItem> createState() => _TagListItemState();
 }
 
-class _ArticleListItemState extends State<ArticleListItem> {
+void setActiveColor() {}
+
+class _TagListItemState extends State<TagListItem> {
   Color _color = Colors.transparent;
   @override
   Widget build(BuildContext context) {
@@ -51,8 +60,8 @@ class _ArticleListItemState extends State<ArticleListItem> {
                     ),
                   ),
                 ),
-                body: ArticleView(
-                  article: widget.article,
+                body: Container(
+                  child: Text(widget.tag.id),
                 ),
               );
             },
@@ -61,7 +70,7 @@ class _ArticleListItemState extends State<ArticleListItem> {
       },
       onTapDown: (tapDetails) => {
         setState(() {
-          _color = Color.fromRGBO(75, 2, 232, 0.186);
+          _color = const Color.fromRGBO(75, 2, 232, 0.186);
         })
       },
       onTapUp: (tapDetails) => {
@@ -89,38 +98,44 @@ class _ArticleListItemState extends State<ArticleListItem> {
           ),
         ),
         padding: const EdgeInsets.all(10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              flex: 3,
-              child: _ArticleDetails(
-                article: widget.article,
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(10),
-                  ),
+        child: ExpandablePanel(
+          theme: const ExpandableThemeData(
+            expandIcon: CupertinoIcons.chevron_right_circle,
+            iconColor: Colors.white,
+            collapseIcon: CupertinoIcons.chevron_down_circle,
+          ),
+          header: Row(
+            children: [
+              Expanded(
+                child: _TagDetails(
+                  tag: widget.tag,
                 ),
-                child: Image.network(widget.article.imageUrl),
               ),
-            ),
-          ],
+            ],
+          ),
+          collapsed: const SizedBox(
+            width: 0,
+            height: 0,
+          ),
+          // expanded: Text(
+          //   "sdasbsdbasjhdbashdbhjasbdsajhbdjshabdhjasbdjhbashjbdjhasb",
+          // ),
+          expanded: FeedListView(
+            articles: widget.articles,
+            feeds: widget.feeds,
+          ),
+          // tapHeaderToExpand: true,
+          // hasIcon: true,
         ),
       ),
     );
   }
 }
 
-class _ArticleDetails extends StatelessWidget {
-  const _ArticleDetails({required this.article});
+class _TagDetails extends StatelessWidget {
+  const _TagDetails({required this.tag});
 
-  final Article article;
+  final Tag tag;
 
   @override
   Widget build(BuildContext context) {
@@ -129,25 +144,18 @@ class _ArticleDetails extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            article.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14.0,
-            ),
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 2.0)),
-          Text(
-            article.originTitle,
-            style: const TextStyle(
-              fontSize: 12.0,
-              color: Color.fromRGBO(76, 2, 232, 1),
-            ),
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 1.0)),
-          Text(
-            timeAgo(article.published),
-            style: const TextStyle(fontSize: 10.0),
+          Row(
+            children: [
+              const Icon(CupertinoIcons.folder),
+              const Padding(padding: EdgeInsets.symmetric(horizontal: 10)),
+              Text(
+                getTag(tag.id),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14.0,
+                ),
+              ),
+            ],
           ),
         ],
       ),

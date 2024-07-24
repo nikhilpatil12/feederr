@@ -16,3 +16,8 @@ String timeAgo(int timestampInMs) {
     return inMinutes == 1 ? "$inMinutes minute ago" : "$inMinutes minutes ago";
   }
 }
+
+String getTag(String rawTag) {
+  List<String> splitted = rawTag.split("/");
+  return splitted.last;
+}

@@ -1,23 +1,29 @@
 import 'package:feederr/models/article.dart';
+import 'package:feederr/models/feed.dart';
 import 'package:feederr/models/tag.dart';
 import 'package:feederr/widgets/article.dart';
+import 'package:feederr/widgets/tag.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class StarredArticles extends StatefulWidget {
+class StarredArticleList extends StatefulWidget {
   final VoidCallback refreshParent;
   final List<Tag> tags;
-  const StarredArticles({
+  final List<Article> articles;
+  final List<Feed> feeds;
+  const StarredArticleList({
     super.key,
     required this.refreshParent,
     required this.tags,
+    required this.feeds,
+    required this.articles,
   });
 
   @override
-  State<StarredArticles> createState() => _StarredArticlesState();
+  State<StarredArticleList> createState() => _StarredArticleListState();
 }
 
-class _StarredArticlesState extends State<StarredArticles> {
+class _StarredArticleListState extends State<StarredArticleList> {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
@@ -32,9 +38,12 @@ class _StarredArticlesState extends State<StarredArticles> {
         ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (BuildContext context, int index) =>
-                ArticleListItem(article: widget.articles[index]),
-            childCount: widget.articles.length,
+            (BuildContext context, int index) => TagListItem(
+              tag: widget.tags[index],
+              feeds: widget.feeds,
+              articles: widget.articles,
+            ),
+            childCount: widget.tags.length,
           ),
         ),
       ],

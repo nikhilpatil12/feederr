@@ -13,6 +13,7 @@ import 'package:feederr/pages/add_server.dart';
 import 'package:feederr/pages/all_articles.dart';
 import 'package:feederr/pages/fav_articles.dart';
 import 'package:feederr/pages/new_articles.dart';
+import 'package:feederr/pages/starred_articles.dart';
 import 'package:feederr/utils/api_utils.dart';
 import 'package:feederr/utils/dbhelper.dart';
 import 'package:flutter/cupertino.dart';
@@ -73,11 +74,11 @@ class HomeScreenState extends State<HomeScreen> {
         List<Tag> tagList = await fetchTagList(baseUrl, auth) ?? [];
         for (Tag tag in tagList) {
           //saving to DB
-          tag.serverId = serverId;
-          databaseService.insertTag(tag);
+          if (tag.type == "folder") {
+            tag.serverId = serverId;
+            databaseService.insertTag(tag);
+          }
         }
-        tags = await databaseService.tags();
-
         //Get Unread/New Ids
         List<NewId> unreadIds = await fetchUnreadIds(baseUrl, auth) ?? [];
         for (NewId id in unreadIds) {
@@ -103,7 +104,7 @@ class HomeScreenState extends State<HomeScreen> {
           //Unread
         }
         print(starredIds.length);
-
+        tags = await databaseService.tags();
         //Getting for each tag/folder
         for (Tag t in tags) {
           if (t.type == "folder") {
@@ -212,7 +213,7 @@ class HomeScreenState extends State<HomeScreen> {
       body: PersistentTabView(
         context,
         controller: controller,
-        screens: _buildScreens(refreshFeeds, articles),
+        screens: _buildScreens(refreshFeeds, articles, tags, feeds),
         items: _navBarsItems(),
         handleAndroidBackButtonPress: true, // Default is true.
         resizeToAvoidBottomInset:
@@ -244,11 +245,18 @@ class HomeScreenState extends State<HomeScreen> {
   }
 }
 
-List<Widget> _buildScreens(VoidCallback refreshFeeds, List<Article> articles) {
+List<Widget> _buildScreens(VoidCallback refreshFeeds,
+    List<Article> starredArticles, List<Tag> tags, List<Feed> feeds) {
   return [
-    FavArticleList(
+    // FavArticleList(
+    //   refreshParent: refreshFeeds,
+    //   articles: articles,
+    // ),
+    StarredArticleList(
       refreshParent: refreshFeeds,
-      articles: articles,
+      tags: tags,
+      feeds: feeds,
+      articles: starredArticles,
     ),
     const NewArticleList(),
     const AllArticleList()

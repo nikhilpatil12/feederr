@@ -1,22 +1,67 @@
 import 'package:feederr/models/article.dart';
-import 'package:feederr/pages/article_view.dart';
+import 'package:feederr/models/feed.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class ArticleListItem extends StatefulWidget {
-  const ArticleListItem({
+class FeedListView extends StatefulWidget {
+  const FeedListView({
     super.key,
-    required this.article,
+    required this.feeds,
+    required this.articles,
   });
 
-  final Article article;
+  final List<Feed> feeds;
+  final List<Article> articles;
 
   @override
-  State<ArticleListItem> createState() => _ArticleListItemState();
+  State<FeedListView> createState() => _FeedListViewState();
 }
 
-class _ArticleListItemState extends State<ArticleListItem> {
+class _FeedListViewState extends State<FeedListView> {
+  Color _color = Colors.transparent;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: _color,
+        borderRadius: const BorderRadius.all(
+          Radius.circular(10),
+        ),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: widget.feeds.length,
+        itemBuilder: (context, index) {
+          final feed = widget.feeds[index];
+          final articles = widget.articles;
+          return FeedListItem(
+            feed: feed,
+            articles: articles,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class FeedListItem extends StatefulWidget {
+  const FeedListItem({
+    super.key,
+    required this.feed,
+    required this.articles,
+  });
+
+  final Feed feed;
+  final List<Article> articles;
+
+  @override
+  State<FeedListItem> createState() => _FeedListItemState();
+}
+
+class _FeedListItemState extends State<FeedListItem> {
   Color _color = Colors.transparent;
   @override
   Widget build(BuildContext context) {
@@ -51,9 +96,8 @@ class _ArticleListItemState extends State<ArticleListItem> {
                     ),
                   ),
                 ),
-                body: ArticleView(
-                  article: widget.article,
-                ),
+                //TODO: Change
+                body: Text(widget.feed.title),
               );
             },
           ),
@@ -93,21 +137,8 @@ class _ArticleListItemState extends State<ArticleListItem> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              flex: 3,
-              child: _ArticleDetails(
-                article: widget.article,
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(10),
-                  ),
-                ),
-                child: Image.network(widget.article.imageUrl),
+              child: _FeedDetails(
+                feed: widget.feed,
               ),
             ),
           ],
@@ -117,37 +148,30 @@ class _ArticleListItemState extends State<ArticleListItem> {
   }
 }
 
-class _ArticleDetails extends StatelessWidget {
-  const _ArticleDetails({required this.article});
+class _FeedDetails extends StatelessWidget {
+  const _FeedDetails({required this.feed});
 
-  final Article article;
+  final Feed feed;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(5.0, 0.0, 0.0, 0.0),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Image(
+            image: NetworkImage(feed.iconUrl),
+            width: 20,
+            height: 20,
+          ),
+          Padding(padding: EdgeInsets.all(10)),
           Text(
-            article.title,
+            feed.title,
             style: const TextStyle(
               fontWeight: FontWeight.w500,
               fontSize: 14.0,
             ),
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 2.0)),
-          Text(
-            article.originTitle,
-            style: const TextStyle(
-              fontSize: 12.0,
-              color: Color.fromRGBO(76, 2, 232, 1),
-            ),
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 1.0)),
-          Text(
-            timeAgo(article.published),
-            style: const TextStyle(fontSize: 10.0),
           ),
         ],
       ),
