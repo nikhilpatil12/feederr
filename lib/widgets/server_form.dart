@@ -121,9 +121,7 @@ class ServerFormState extends State<ServerForm> {
                   Server? s1 = await databaseService.serverByUrlAndUsername(
                       baseUrl, userName);
                   if (s1 != null) {
-                    if (s1.auth == "") {
-                      //TODO: Add auth
-                    } else {
+                    if (s1.auth != "") {
                       Fluttertoast.showToast(
                           msg:
                               "Server and user already exist. You can edit them instead",

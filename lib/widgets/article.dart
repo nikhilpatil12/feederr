@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:feederr/models/article.dart';
 import 'package:feederr/pages/article_view.dart';
 import 'package:feederr/utils/utils.dart';
@@ -107,13 +110,39 @@ class _ArticleListItemState extends State<ArticleListItem> {
                     Radius.circular(10),
                   ),
                 ),
-                child: Image.network(widget.article.imageUrl),
+                child: _showImage(widget.article.imageUrl),
+                // Image.network(
+                //   widget.article.imageUrl,
+                //   errorBuilder: (context, exception, stackTrace) {
+                //     return const SizedBox(height: 40);
+                //   },
+                // ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  GestureDetector _showImage(String src) {
+    if (src.startsWith('data:image/')) {
+      // Handle Base64 image
+      final base64Data = src.split(',').last;
+      final imageBytes = base64Decode(base64Data);
+      return GestureDetector(
+        child: Image.memory(Uint8List.fromList(imageBytes)),
+      );
+    } else {
+      return GestureDetector(
+        child: Image.network(
+          widget.article.imageUrl,
+          errorBuilder: (context, exception, stackTrace) {
+            return const SizedBox(height: 40);
+          },
+        ),
+      );
+    }
   }
 }
 

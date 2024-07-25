@@ -1,3 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:path_provider/path_provider.dart';
+
 String timeAgo(int timestampInMs) {
   final now = DateTime.now();
   final then = DateTime.fromMillisecondsSinceEpoch(timestampInMs * 1000);
@@ -20,4 +26,13 @@ String timeAgo(int timestampInMs) {
 String getTag(String rawTag) {
   List<String> splitted = rawTag.split("/");
   return splitted.last;
+}
+
+List<String> castToListOfStrings(dynamic list) {
+  if (list is List) {
+    return list.cast<String>();
+  } else {
+    // Handle the case where the object is not a list
+    throw ArgumentError('Expected a List of Strings');
+  }
 }

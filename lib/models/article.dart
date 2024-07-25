@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class Article {
   final String? id;
-  final int? id2;
+  int? id2;
   final String crawlTimeMsec;
   final String timestampUsec;
   final int published;
@@ -16,7 +16,7 @@ class Article {
   final String summaryContent;
   final String author;
   String imageUrl;
-  final int serverId;
+  int serverId;
 
   Article({
     required this.id,
@@ -70,7 +70,7 @@ class Article {
       title: map['title'] ?? '',
       canonical: map['canonical'][0]["href"] ?? '',
       alternate: map['alternate'][0]["href"] ?? '',
-      categories: map['categories'].toString(),
+      categories: jsonEncode(map['categories']),
       originStreamId: map['origin']['streamId'] ?? '',
       originHtmlUrl: map['origin']['htmlUrl'] ?? '',
       originTitle: map['origin']['title'] ?? '',
@@ -90,11 +90,11 @@ class Article {
       title: map['title'] ?? '',
       canonical: map['canonical'] ?? '',
       alternate: map['alternate'] ?? '',
-      categories: map['categories'].toString(),
+      categories: jsonEncode(map['categories']),
       originStreamId: map['originStreamId'] ?? '',
-      originHtmlUrl: map['originHtmlUrl'] ?? '',
-      originTitle: map['originTitle'] ?? '',
-      summaryContent: map['summarContent'] ?? '',
+      originHtmlUrl: map['origin_htmlUrl'] ?? '',
+      originTitle: map['origin_title'] ?? '',
+      summaryContent: map['summary_content'] ?? '',
       author: map['author'] ?? '',
       imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
       serverId: map['serverId'] ?? 0,

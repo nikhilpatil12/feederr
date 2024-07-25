@@ -1,5 +1,6 @@
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feed.dart';
+import 'package:feederr/pages/fav_articles.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,9 +31,10 @@ class _FeedListViewState extends State<FeedListView> {
           Radius.circular(10),
         ),
       ),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.only(left: 20),
       child: ListView.builder(
         shrinkWrap: true,
+        padding: const EdgeInsets.all(0),
         itemCount: widget.feeds.length,
         itemBuilder: (context, index) {
           final feed = widget.feeds[index];
@@ -96,8 +98,10 @@ class _FeedListItemState extends State<FeedListItem> {
                     ),
                   ),
                 ),
-                //TODO: Change
-                body: Text(widget.feed.title),
+                body: FavArticleList(
+                  refreshParent: () => {},
+                  articles: widget.articles,
+                ),
               );
             },
           ),
@@ -105,7 +109,7 @@ class _FeedListItemState extends State<FeedListItem> {
       },
       onTapDown: (tapDetails) => {
         setState(() {
-          _color = Color.fromRGBO(75, 2, 232, 0.186);
+          _color = const Color.fromRGBO(75, 2, 232, 0.186);
         })
       },
       onTapUp: (tapDetails) => {
@@ -156,21 +160,28 @@ class _FeedDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(5.0, 0.0, 0.0, 0.0),
+      padding: const EdgeInsets.only(
+        left: 5.0,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Image(
-            image: NetworkImage(feed.iconUrl),
+          Image.network(
             width: 20,
             height: 20,
+            feed.iconUrl,
+            errorBuilder: (context, exception, stackTrace) {
+              return const Icon(Icons.rss_feed_rounded);
+            },
           ),
-          Padding(padding: EdgeInsets.all(10)),
-          Text(
-            feed.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14.0,
+          const Padding(padding: EdgeInsets.only(left: 10)),
+          Flexible(
+            child: Text(
+              feed.title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14.0,
+              ),
             ),
           ),
         ],

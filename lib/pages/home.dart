@@ -16,11 +16,16 @@ import 'package:feederr/pages/new_articles.dart';
 import 'package:feederr/pages/starred_articles.dart';
 import 'package:feederr/utils/api_utils.dart';
 import 'package:feederr/utils/dbhelper.dart';
+import 'package:feederr/utils/utils.dart';
+import 'package:feederr/widgets/loading.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:feederr/pages/settings.dart';
+
+bool isWebLoading = false;
+bool isLocalLoading = false;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title});
@@ -30,13 +35,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  List<Feed> feeds = [];
-  List<Tag> tags = [];
-  List<NewId> newIds = [];
-  List<StarredId> starredIds = [];
-  List<TaggedId> taggedIds = [];
-  List<Article> articles = [];
-  bool isLoading = false;
+  List<Feed> dbFeeds = [];
+  List<Tag> dbTags = [];
+  List<NewId> dbNewIds = [];
+  List<StarredId> dbStarredIds = [];
+  List<TaggedId> dbTaggedIds = [];
+  List<Article> dbArticles = [];
+
   DatabaseService databaseService = DatabaseService();
 
   void refreshFeeds() async {
@@ -52,7 +57,8 @@ class HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchFeedList() async {
     setState(() {
-      isLoading = true;
+      isLocalLoading = true;
+      isWebLoading = true;
     });
     try {
       //Getting Server list
@@ -61,98 +67,225 @@ class HomeScreenState extends State<HomeScreen> {
         String baseUrl = serverList[0].baseUrl;
         String auth = serverList[0].auth ?? '';
         int serverId = serverList[0].id ?? 0;
+
         //Getting feedlist from server(s)
         List<Feed> feedList = await fetchFeedList(baseUrl, auth) ?? [];
+        dbFeeds = await databaseService.feeds();
+        dbTags = await databaseService.tags();
+        dbNewIds = await databaseService.newIds();
+        dbStarredIds = await databaseService.starredIds();
+        dbArticles = await databaseService.articles();
+        setState(() {
+          isLocalLoading = false;
+        });
+        //Adding new feeds to db
         for (Feed feed in feedList) {
           //saving to DB
           feed.serverId = serverId;
-          databaseService.insertFeed(feed);
+          if (dbFeeds.isEmpty ||
+              (dbFeeds.isNotEmpty &&
+                  dbFeeds
+                      .where((x) => x.id == feed.id && x.serverId == serverId)
+                      .isEmpty)) {
+            databaseService.insertFeed(feed);
+          }
         }
-        feeds = await databaseService.feeds();
+        dbFeeds = await databaseService.feeds();
+        //Removing old feeds from db
+        if (dbFeeds.isNotEmpty) {
+          for (Feed feed in dbFeeds) {
+            if (feedList
+                .where((x) => x.id == feed.id && x.serverId == serverId)
+                .isEmpty) {
+              databaseService.deleteFeed(feed.id);
+            }
+          }
+        }
+        dbFeeds = await databaseService.feeds();
+        for (Feed feed in dbFeeds) {
+          List<String> categories = [];
+          var feedCategories = jsonDecode(jsonDecode(feed.categories));
 
-        //Getting feedlist from server(s)
+          if (feedCategories is List) {
+            for (var feedCategory in feedCategories) {
+              if (feedCategory is Map && feedCategory.containsKey('id')) {
+                categories.add(feedCategory['id']);
+              }
+            }
+          }
+          databaseService.insertFeedWithCategories(feed, categories);
+        }
+
+        //Getting taglist from server(s)
         List<Tag> tagList = await fetchTagList(baseUrl, auth) ?? [];
+        //add new tags from server(s)
         for (Tag tag in tagList) {
           //saving to DB
           if (tag.type == "folder") {
             tag.serverId = serverId;
-            databaseService.insertTag(tag);
+            if (dbTags.isEmpty ||
+                (dbTags.isNotEmpty &&
+                    dbTags
+                        .where((x) => x.id == tag.id && x.serverId == serverId)
+                        .isEmpty)) {
+              databaseService.insertTag(tag);
+            }
           }
         }
+        dbTags = await databaseService.tags();
+        //Removing old tags from db
+        if (dbTags.isNotEmpty) {
+          for (Tag tag in dbTags) {
+            if (tagList
+                .where((x) => x.id == tag.id && x.serverId == serverId)
+                .isEmpty) {
+              databaseService.deleteTag(tag.id);
+            }
+          }
+        }
+        dbTags = await databaseService.tags();
+
         //Get Unread/New Ids
         List<NewId> unreadIds = await fetchUnreadIds(baseUrl, auth) ?? [];
+        //Saving newids to db
         for (NewId id in unreadIds) {
           //saving to DB
           id.serverId = serverId;
-          databaseService.insertNewId(id);
+          if (dbNewIds.isEmpty ||
+              (dbNewIds.isNotEmpty &&
+                  dbNewIds
+                      .where((x) =>
+                          x.articleId == id.articleId && x.serverId == serverId)
+                      .isEmpty)) {
+            databaseService.insertNewId(id);
+          }
         }
-        newIds = await databaseService.newIds();
-        for (NewId id in newIds) {
-          //Unread
+        dbNewIds = await databaseService.newIds();
+        //Removing old ids from db
+        if (dbNewIds.isNotEmpty) {
+          for (NewId id in dbNewIds) {
+            if (unreadIds
+                .where((x) =>
+                    x.articleId == id.articleId && x.serverId == serverId)
+                .isEmpty) {
+              databaseService.deleteNewId(id.articleId);
+            }
+          }
         }
-        print(newIds.length);
-        //Get Unread/New Ids
+        dbNewIds = await databaseService.newIds();
+
+        //Get stearred Ids
         List<StarredId> newStarredIds =
             await fetchStarredIds(baseUrl, auth) ?? [];
+        //Saving new starred ids to db
         for (StarredId id in newStarredIds) {
           //saving to DB
           id.serverId = serverId;
-          databaseService.insertStarredId(id);
-        }
-        starredIds = await databaseService.starredIds();
-        for (StarredId id in starredIds) {
-          //Unread
-        }
-        print(starredIds.length);
-        tags = await databaseService.tags();
-        //Getting for each tag/folder
-        for (Tag t in tags) {
-          if (t.type == "folder") {
-            //TODO: Add to UI, and get count
-            List<TaggedId> newTaggedIds =
-                await fetchTaggedIds(baseUrl, auth, t.id) ?? [];
-            for (TaggedId id in newTaggedIds) {
-              id.serverId = serverId;
-              id.tag = t.id;
-              databaseService.insertTaggedId(id);
-            }
-            taggedIds = await databaseService.taggedIdsByTag(t.id);
-
-            print(t.id);
-            print(taggedIds.length);
+          if (dbStarredIds.isEmpty ||
+              (dbStarredIds.isNotEmpty &&
+                  dbStarredIds
+                      .where((x) =>
+                          x.articleId == id.articleId && x.serverId == serverId)
+                      .isEmpty)) {
+            databaseService.insertStarredId(id);
           }
         }
+        dbStarredIds = await databaseService.starredIds();
+        //Removing old ids from db
+        if (dbStarredIds.isNotEmpty) {
+          for (StarredId id in dbStarredIds) {
+            if (newStarredIds
+                .where((x) =>
+                    x.articleId == id.articleId && x.serverId == serverId)
+                .isEmpty) {
+              databaseService.deleteStarredId(id.articleId);
+            }
+          }
+        }
+        dbStarredIds = await databaseService.starredIds();
 
-        //TODO: Fetch new articlecontents
-        //temp: change data
-        if (newIds.isNotEmpty) {
+        //Getting for each tag/folder
+        for (Tag t in dbTags) {
+          dbTaggedIds = await databaseService.taggedIdsByTag(t.id);
+          //Adding new tagged ids to db
+          List<TaggedId> newTaggedIds =
+              await fetchTaggedIds(baseUrl, auth, t.id) ?? [];
+          for (TaggedId id in newTaggedIds) {
+            id.serverId = serverId;
+            id.tag = t.id;
+            if (dbTaggedIds.isEmpty ||
+                (dbTaggedIds.isNotEmpty &&
+                    dbTaggedIds
+                        .where((x) =>
+                            x.articleId == id.articleId &&
+                            x.serverId == serverId)
+                        .isEmpty)) {
+              databaseService.insertTaggedId(id);
+            }
+          }
+          //Removing old ids from db
+          dbTaggedIds = await databaseService.taggedIdsByTag(t.id);
+          if (dbTaggedIds.isNotEmpty) {
+            for (TaggedId id in dbTaggedIds) {
+              if (newTaggedIds
+                  .where((x) =>
+                      x.articleId == id.articleId && x.serverId == serverId)
+                  .isEmpty) {
+                databaseService.deleteTaggedId(id.articleId);
+              }
+            }
+          }
+          dbTaggedIds = await databaseService.taggedIdsByTag(t.id);
+          //TODO: Prepare data for tabs
+          List<Article> s = await databaseService.allArticlesByTag(t.id);
+          print(s.length);
+        }
+
+        //Fetch and insert new article contents
+        if (dbNewIds.isNotEmpty) {
           String data = '';
-          for (NewId id in newIds) {
+          for (NewId id in dbNewIds) {
             String idString = id.articleId.toString();
             data += "i=$idString&";
           }
           List<Article> newArticles =
               await fetchNewArticleContents(baseUrl, auth, data) ?? [];
-          for (Article nA in newArticles) {
-            var document = parse(nA.summaryContent);
-            var images = document.getElementsByTagName("img");
+          for (Article newArticle in newArticles) {
+            var document = parse(newArticle.summaryContent);
+            List<dynamic> images = document.getElementsByTagName("img");
             if (images.isNotEmpty && images[0].attributes.containsKey("src")) {
-              nA.imageUrl = images[0].attributes['src']!;
+              newArticle.imageUrl = images[0].attributes['src']!;
+              newArticle.serverId = serverId;
+              newArticle.id2 =
+                  int.parse(newArticle.id!.split("/").last, radix: 16);
+              if (dbArticles.isEmpty ||
+                  (dbArticles.isNotEmpty &&
+                      dbArticles
+                          .where((x) =>
+                              x.id == newArticle.id && x.serverId == serverId)
+                          .isEmpty)) {
+                // databaseService.insertArticle(newArticle);
+
+                List<String> articleCategories =
+                    castToListOfStrings(jsonDecode(newArticle.categories));
+                databaseService.insertArticleWithCategories(
+                    newArticle, articleCategories);
+              }
             }
           }
-          articles = newArticles;
-          print(articles.length);
+
+          dbArticles = await databaseService.articles();
+          //TODO: Sort Implementation, maybe lazy loading/pagination?
+          dbArticles.sort((b, a) => a.published.compareTo(b.published));
+          // print(dbArticles.length);
         }
       }
-
-      //Getting Label list(folders)
-
-      // print(feeds.length);
-    } on DioException catch (e) {
+    } on Exception catch (e) {
       // Handle error
     } finally {
       setState(() {
-        isLoading = false;
+        isLocalLoading = false;
+        isWebLoading = false;
       });
     }
   }
@@ -174,7 +307,6 @@ class HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
-                  //TODO: Settings
                   builder: (BuildContext context) {
                     return Scaffold(
                       appBar: AppBar(
@@ -195,7 +327,6 @@ class HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
-                  //TODO: Settings
                   builder: (BuildContext context) {
                     return Scaffold(
                       appBar: AppBar(
@@ -213,7 +344,7 @@ class HomeScreenState extends State<HomeScreen> {
       body: PersistentTabView(
         context,
         controller: controller,
-        screens: _buildScreens(refreshFeeds, articles, tags, feeds),
+        screens: _buildScreens(refreshFeeds, dbArticles, dbTags, dbFeeds),
         items: _navBarsItems(),
         handleAndroidBackButtonPress: true, // Default is true.
         resizeToAvoidBottomInset:
@@ -252,13 +383,33 @@ List<Widget> _buildScreens(VoidCallback refreshFeeds,
     //   refreshParent: refreshFeeds,
     //   articles: articles,
     // ),
-    StarredArticleList(
-      refreshParent: refreshFeeds,
-      tags: tags,
-      feeds: feeds,
-      articles: starredArticles,
-    ),
-    const NewArticleList(),
+    isLocalLoading
+        ? const CupertinoActivityIndicator(
+            radius: 20.0,
+            color: Color.fromRGBO(76, 2, 232, 1),
+          )
+        : StarredArticleList(
+            refreshParent: refreshFeeds,
+            path: 'fav',
+          ),
+    isLocalLoading
+        ? const CupertinoActivityIndicator(
+            radius: 20.0,
+            color: Color.fromRGBO(76, 2, 232, 1),
+          )
+        : FavArticleList(
+            refreshParent: refreshFeeds,
+            articles: starredArticles,
+          ),
+    // isLocalLoading
+    //     ? const CupertinoActivityIndicator(
+    //         radius: 20.0,
+    //         color: Color.fromRGBO(76, 2, 232, 1),
+    //       )
+    //     : StarredArticleList(
+    //         refreshParent: refreshFeeds,
+    //         path: 'new',
+    //       ),
     const AllArticleList()
   ];
 }
@@ -303,35 +454,6 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
 //   "/new": (final context) => const NewArticleList(),
 //   "/fav": (final context) => const FavArticleList(refreshParent: refresh,),
 // };
-
-Future<String> userLogin() async {
-  try {
-    var dio = Dio();
-    var response = await dio.request(
-      'http://rss.nikpatil.com/api/greader.php/accounts/ClientLogin?Email=nikhil&Passwd=Iamnik12@',
-      options: Options(
-        method: 'GET',
-      ),
-    );
-    if (response.statusCode == 200) {
-      // print(json.encode(response.data));
-      return json.encode(response.data);
-    } else {
-      // print(response.statusMessage);
-    }
-  } on DioException catch (e) {
-    if (e.response != null) {
-      // print(e.response?.data);
-      // print(e.response?.headers);
-      // print(e.response?.requestOptions);
-    } else {
-      // Something happened in setting up or sending the request that triggered an Error
-      // print(e.requestOptions);
-      // print(e.message);
-    }
-  }
-  return "404";
-}
 
 void _showOverlay(BuildContext context, String message) {
   final overlay = Overlay.of(context);

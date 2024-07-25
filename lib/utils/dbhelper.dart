@@ -1,3 +1,6 @@
+import 'package:feederr/models/article_category.dart';
+import 'package:feederr/models/category.dart';
+import 'package:feederr/models/feed_category.dart';
 import 'package:feederr/models/tagged_id.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/models/article.dart';
@@ -47,7 +50,20 @@ class DatabaseService {
       'CREATE TABLE server_list(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT)',
     );
     await db.execute(
-        'CREATE TABLE articles(id TEXT, id2 INTEGER PRIMARY KEY, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)');
+      'CREATE TABLE categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)',
+    );
+    await db.execute(
+      'CREATE TABLE articles(id TEXT, id2 INTEGER PRIMARY KEY, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
+    );
+    await db.execute(
+      'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
+    );
+    await db.execute(
+      'CREATE TABLE articles_categories (article_id INTEGER, category_id INTEGER, PRIMARY KEY (article_id, category_id), FOREIGN KEY (article_id) REFERENCES articles(id2), FOREIGN KEY (category_id) REFERENCES categories(id))',
+    );
+    await db.execute(
+      'CREATE TABLE feed_categories (feed_id INTEGER, category_id INTEGER, PRIMARY KEY (feed_id, category_id), FOREIGN KEY (feed_id) REFERENCES feed_list(id), FOREIGN KEY (category_id) REFERENCES categories(id))',
+    );
     await db.execute(
       'CREATE TABLE starred_ids(articleId INTEGER PRIMARY KEY, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
@@ -60,13 +76,10 @@ class DatabaseService {
     await db.execute(
       'CREATE TABLE tagged_ids(articleId INTEGER PRIMARY KEY, serverId INTEGER, tag STRING, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE, FOREIGN KEY (tag) REFERENCES tag_list(id) ON DELETE CASCADE)',
     );
-    await db.execute(
-      'CREATE TABLE feed_list(id TEXT PRIMARY KEY, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
-    );
   }
 
   // Define a function that inserts articles into the database
-  Future<void> insertArticle(Article article) async {
+  Future<int> insertArticle(Article article) async {
     // Get a reference to the database.
     final db = await _databaseService.database;
 
@@ -79,6 +92,7 @@ class DatabaseService {
       article.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    return article.id2 ?? 0;
   }
 
   Future<void> insertNewId(NewId id) async {
@@ -117,13 +131,14 @@ class DatabaseService {
     );
   }
 
-  Future<void> insertFeed(Feed feed) async {
+  Future<String> insertFeed(Feed feed) async {
     final db = await _databaseService.database;
     await db.insert(
       'feed_list',
       feed.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    return feed.id;
   }
 
   Future<void> insertServer(Server server) async {
@@ -146,6 +161,44 @@ class DatabaseService {
     // Convert the List<Map<String, dynamic> into a List<Article>.
     return List.generate(
         maps.length, (index) => Article.fromDBMap(maps[index]));
+  }
+
+  Future<List<Article>> allArticlesByTag(String tag) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> articles = await db.rawQuery('''
+    SELECT articles.*
+    FROM articles
+    INNER JOIN tagged_ids ON articles.id2 = tagged_ids.articleId
+    WHERE tagged_ids.tag = ?
+  ''', [tag]);
+    return List.generate(
+        articles.length, (index) => Article.fromDBMap(articles[index]));
+  }
+
+  Future<List<Article>> starredArticlesByTag(String tag) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> articles = await db.rawQuery('''
+    SELECT articles.*
+    FROM articles
+    INNER JOIN tagged_ids ON articles.id2 = tagged_ids.articleId
+  INNER JOIN starred_ids ON articles.id2 = starred_ids.articleId
+    WHERE tagged_ids.tag = ?
+  ''', [tag]);
+    return List.generate(
+        articles.length, (index) => Article.fromDBMap(articles[index]));
+  }
+
+  Future<List<Article>> unreadArticlesByTag(String tag) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> articles = await db.rawQuery('''
+    SELECT articles.*
+    FROM articles
+    INNER JOIN tagged_ids ON articles.id2 = tagged_ids.articleId
+    INNER JOIN new_ids ON articles.id2 = new_ids.articleId
+    WHERE tagged_ids.tag = ?
+  ''', [tag]);
+    return List.generate(
+        articles.length, (index) => Article.fromDBMap(articles[index]));
   }
 
   Future<Article> article(int id) async {
@@ -304,12 +357,17 @@ class DatabaseService {
     await db.delete('starred_ids', where: 'articleId = ?', whereArgs: [id]);
   }
 
-  Future<void> deleteTag(int id) async {
+  Future<void> deleteTag(String id) async {
     final db = await _databaseService.database;
     await db.delete('tag_list', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> deleteFeed(int id) async {
+  Future<void> deleteFeed(String id) async {
+    final db = await _databaseService.database;
+    await db.delete('feed_list', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteTaggedId(int id) async {
     final db = await _databaseService.database;
     await db.delete('feed_list', where: 'id = ?', whereArgs: [id]);
   }
@@ -323,5 +381,58 @@ class DatabaseService {
     final db = await _databaseService.database;
     await db.delete('server_list',
         where: 'baseUrl = ? AND userName = ?', whereArgs: [baseUrl, userName]);
+  }
+
+  Future<void> insertArticleWithCategories(
+      Article article, List<String> categories) async {
+    // Insert article first to get the article ID
+    int articleId = await insertArticle(article);
+
+    // Insert categories if they don't exist
+    await Future.forEach(categories, (category) async {
+      int categoryId = await getCategoryOrCreate(category);
+      ArticleCategory artCat =
+          ArticleCategory(articleId: articleId, categoryId: categoryId);
+      await insertArticleCategory(artCat);
+    });
+  }
+
+  Future<void> insertFeedWithCategories(
+      Feed feed, List<String> categories) async {
+    // Insert article first to get the article ID
+    String feedId = await insertFeed(feed);
+
+    // Insert categories if they don't exist
+    await Future.forEach(categories, (category) async {
+      int categoryId = await getCategoryOrCreate(category);
+      FeedCategory feedCat =
+          FeedCategory(feedId: feedId, categoryId: categoryId);
+      await insertFeedCategory(feedCat);
+    });
+  }
+
+  Future<int> getCategoryOrCreate(String category) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('categories', where: 'name = ?', whereArgs: [category]);
+    return Category.fromMap(maps[0]).id;
+  }
+
+  Future<void> insertArticleCategory(ArticleCategory articleCategory) async {
+    final db = await _databaseService.database;
+    await db.insert(
+      'articles_categories',
+      articleCategory.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertFeedCategory(FeedCategory feedCategory) async {
+    final db = await _databaseService.database;
+    await db.insert(
+      'feed_categories',
+      feedCategory.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }
