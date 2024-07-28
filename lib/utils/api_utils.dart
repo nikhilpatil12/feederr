@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feed.dart';
 import 'package:feederr/models/tagged_id.dart';
-import 'package:feederr/models/new.dart';
+import 'package:feederr/models/unread.dart';
 import 'package:feederr/models/starred.dart';
 import 'package:feederr/models/tag.dart';
 
@@ -148,7 +148,7 @@ Future<List<Tag>?> fetchTagList(String baseUrl, String auth) async {
   }
 }
 
-Future<List<NewId>?> fetchUnreadIds(String baseUrl, String auth) async {
+Future<List<UnreadId>?> fetchUnreadIds(String baseUrl, String auth) async {
   var dio = Dio();
   try {
     var headers = {'Authorization': 'GoogleLogin auth=$auth'};
@@ -165,7 +165,7 @@ Future<List<NewId>?> fetchUnreadIds(String baseUrl, String auth) async {
 
       Map<String, dynamic> resp = jsonDecode(response.data);
       final data = resp["itemRefs"] as List;
-      return data.map((id) => NewId.fromMap(id)).toList();
+      return data.map((id) => UnreadId.fromMap(id)).toList();
     } else {
       // print(response.statusMessage);
       return null;
@@ -193,7 +193,7 @@ Future<List<StarredId>?> fetchStarredIds(String baseUrl, String auth) async {
   try {
     var headers = {'Authorization': 'GoogleLogin auth=$auth'};
     var response = await dio.request(
-      '$baseUrl/api/greader.php/reader/api/0/stream/items/ids?output=json&n=1000&s=user/-/state/com.google/starred',
+      '$baseUrl/api/greader.php/reader/api/0/stream/items/ids?output=json&n=10000&s=user/-/state/com.google/starred',
       options: Options(
         method: 'GET',
         headers: headers,

@@ -2,12 +2,14 @@ import 'dart:convert';
 
 class Tag {
   final String id;
+  final int? id2;
   final String type;
   final int count;
   int serverId;
 
   Tag({
     required this.id,
+    this.id2,
     required this.type,
     required this.count,
     required this.serverId,
@@ -16,6 +18,7 @@ class Tag {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      // 'id2': id2,
       'type': type,
       'count': count,
       'serverId': serverId,
@@ -25,6 +28,7 @@ class Tag {
   factory Tag.fromMap(Map<String, dynamic> map) {
     return Tag(
       id: map['id'] ?? '',
+      id2: map['id2'] ?? 0,
       type: map['type'] ?? '',
       count: map['count'] ?? 0,
       serverId: map['serverId'] ?? 0,

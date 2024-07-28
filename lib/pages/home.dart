@@ -1,34 +1,33 @@
 import 'dart:convert';
-
-import 'package:dio/dio.dart';
-import 'package:feederr/main.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feed.dart';
+import 'package:feederr/models/categoryentry.dart';
 import 'package:feederr/models/tagged_id.dart';
-import 'package:feederr/models/new.dart';
+import 'package:feederr/models/unread.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/models/starred.dart';
 import 'package:feederr/models/tag.dart';
 import 'package:feederr/pages/add_server.dart';
-import 'package:feederr/pages/all_articles.dart';
-import 'package:feederr/pages/fav_articles.dart';
-import 'package:feederr/pages/new_articles.dart';
 import 'package:feederr/pages/starred_articles.dart';
 import 'package:feederr/utils/api_utils.dart';
 import 'package:feederr/utils/dbhelper.dart';
 import 'package:feederr/utils/utils.dart';
-import 'package:feederr/widgets/loading.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:html/parser.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:feederr/pages/settings.dart';
 
 bool isWebLoading = false;
 bool isLocalLoading = false;
+String status = "";
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.title});
+  const HomeScreen({
+    super.key,
+    required this.title,
+  });
   final String title;
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -37,12 +36,23 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   List<Feed> dbFeeds = [];
   List<Tag> dbTags = [];
-  List<NewId> dbNewIds = [];
+  List<UnreadId> dbUnreadIds = [];
   List<StarredId> dbStarredIds = [];
-  List<TaggedId> dbTaggedIds = [];
+
   List<Article> dbArticles = [];
 
+  List<CategoryEntry> favCategoryEntries = [];
+  List<CategoryEntry> newCategoryEntries = [];
+  List<CategoryEntry> allCategoryEntries = [];
+
   DatabaseService databaseService = DatabaseService();
+  void showStatus(String newStatus) async {
+    status = newStatus;
+    // Remove the overlay after 100 milliseconds
+    // Future.delayed(Duration(milliseconds: 200), () {
+    //   status = "";
+    // });
+  }
 
   void refreshFeeds() async {
     await _fetchFeedList();
@@ -63,18 +73,35 @@ class HomeScreenState extends State<HomeScreen> {
     try {
       //Getting Server list
       List<Server> serverList = await databaseService.servers();
+      //TODO: remove
+      if (serverList.isEmpty) {
+        await databaseService.insertServer(Server(
+            baseUrl: "https://rss2.nikpatil.com",
+            userName: "nikhil",
+            password: "iamnik12@",
+            auth: "nikhil/144d26452b66538e16d0d26b01e0382ab0da7b3b"));
+        serverList = await databaseService.servers();
+      }
+
       if (serverList.isNotEmpty) {
         String baseUrl = serverList[0].baseUrl;
         String auth = serverList[0].auth ?? '';
         int serverId = serverList[0].id ?? 0;
-
+        showStatus("Fetching feeds");
         //Getting feedlist from server(s)
         List<Feed> feedList = await fetchFeedList(baseUrl, auth) ?? [];
-        dbFeeds = await databaseService.feeds();
+        dbFeeds = await databaseService.feedsByServerId(serverId);
+
         dbTags = await databaseService.tags();
-        dbNewIds = await databaseService.newIds();
+        dbUnreadIds = await databaseService.unreadIds();
         dbStarredIds = await databaseService.starredIds();
         dbArticles = await databaseService.articles();
+
+        favCategoryEntries =
+            await databaseService.getCategoryEntriesWithStarredArticles();
+        allCategoryEntries = await databaseService.getCategoryEntries();
+        newCategoryEntries =
+            await databaseService.getCategoryEntriesWithNewArticles();
         setState(() {
           isLocalLoading = false;
         });
@@ -82,12 +109,10 @@ class HomeScreenState extends State<HomeScreen> {
         for (Feed feed in feedList) {
           //saving to DB
           feed.serverId = serverId;
-          if (dbFeeds.isEmpty ||
-              (dbFeeds.isNotEmpty &&
-                  dbFeeds
-                      .where((x) => x.id == feed.id && x.serverId == serverId)
-                      .isEmpty)) {
-            databaseService.insertFeed(feed);
+          Feed? dF =
+              await databaseService.feedByServerAndFeedId(serverId, feed.id);
+          if (dF == null) {
+            await databaseService.insertFeed(feed);
           }
         }
         dbFeeds = await databaseService.feeds();
@@ -97,14 +122,14 @@ class HomeScreenState extends State<HomeScreen> {
             if (feedList
                 .where((x) => x.id == feed.id && x.serverId == serverId)
                 .isEmpty) {
-              databaseService.deleteFeed(feed.id);
+              await databaseService.deleteFeed(feed.id);
             }
           }
         }
         dbFeeds = await databaseService.feeds();
         for (Feed feed in dbFeeds) {
           List<String> categories = [];
-          var feedCategories = jsonDecode(jsonDecode(feed.categories));
+          var feedCategories = jsonDecode(feed.categories);
 
           if (feedCategories is List) {
             for (var feedCategory in feedCategories) {
@@ -113,9 +138,9 @@ class HomeScreenState extends State<HomeScreen> {
               }
             }
           }
-          databaseService.insertFeedWithCategories(feed, categories);
+          await databaseService.insertFeedWithCategories(feed, categories);
         }
-
+        showStatus("Fetching folders");
         //Getting taglist from server(s)
         List<Tag> tagList = await fetchTagList(baseUrl, auth) ?? [];
         //add new tags from server(s)
@@ -128,7 +153,7 @@ class HomeScreenState extends State<HomeScreen> {
                     dbTags
                         .where((x) => x.id == tag.id && x.serverId == serverId)
                         .isEmpty)) {
-              databaseService.insertTag(tag);
+              await databaseService.insertTag(tag);
             }
           }
         }
@@ -139,41 +164,63 @@ class HomeScreenState extends State<HomeScreen> {
             if (tagList
                 .where((x) => x.id == tag.id && x.serverId == serverId)
                 .isEmpty) {
-              databaseService.deleteTag(tag.id);
+              await databaseService.deleteTag(tag.id);
             }
           }
         }
         dbTags = await databaseService.tags();
-
+        showStatus("Fetching unread items");
         //Get Unread/New Ids
-        List<NewId> unreadIds = await fetchUnreadIds(baseUrl, auth) ?? [];
+        List<UnreadId> unreadIds = await fetchUnreadIds(baseUrl, auth) ?? [];
         //Saving newids to db
-        for (NewId id in unreadIds) {
+        for (UnreadId id in unreadIds) {
           //saving to DB
           id.serverId = serverId;
-          if (dbNewIds.isEmpty ||
-              (dbNewIds.isNotEmpty &&
-                  dbNewIds
+          if (dbUnreadIds.isEmpty ||
+              (dbUnreadIds.isNotEmpty &&
+                  dbUnreadIds
                       .where((x) =>
                           x.articleId == id.articleId && x.serverId == serverId)
                       .isEmpty)) {
-            databaseService.insertNewId(id);
+            await databaseService.insertUnreadId(id);
           }
         }
-        dbNewIds = await databaseService.newIds();
+        dbUnreadIds = await databaseService.unreadIds();
         //Removing old ids from db
-        if (dbNewIds.isNotEmpty) {
-          for (NewId id in dbNewIds) {
+        if (dbUnreadIds.isNotEmpty) {
+          for (UnreadId id in dbUnreadIds) {
             if (unreadIds
                 .where((x) =>
                     x.articleId == id.articleId && x.serverId == serverId)
                 .isEmpty) {
-              databaseService.deleteNewId(id.articleId);
+              await databaseService.deleteUnreadId(id.articleId);
             }
           }
         }
-        dbNewIds = await databaseService.newIds();
+        dbUnreadIds = await databaseService.unreadIds();
+        //Add missing IDs from database to the API query sring
+        String missingIds = '';
+        for (UnreadId unreadId in dbUnreadIds) {
+          int id = unreadId.articleId;
+          Article? a = await databaseService.article(id);
+          if (a == null) {
+            missingIds += "i=$id&";
+          }
+        }
 
+        for (Tag tag in dbTags) {
+          List<TaggedId>? taggedIds =
+              await fetchTaggedIds(baseUrl, auth, tag.id);
+          //Adding new tagged ids to db
+          for (TaggedId taggedId in taggedIds!) {
+            int id = taggedId.articleId;
+            Article? a = await databaseService.article(id);
+            if (a == null) {
+              missingIds += "i=$id&";
+            }
+          }
+        }
+        // _showOverlay("Fetching new articles...");
         //Get stearred Ids
         List<StarredId> newStarredIds =
             await fetchStarredIds(baseUrl, auth) ?? [];
@@ -187,7 +234,7 @@ class HomeScreenState extends State<HomeScreen> {
                       .where((x) =>
                           x.articleId == id.articleId && x.serverId == serverId)
                       .isEmpty)) {
-            databaseService.insertStarredId(id);
+            await databaseService.insertStarredId(id);
           }
         }
         dbStarredIds = await databaseService.starredIds();
@@ -198,87 +245,62 @@ class HomeScreenState extends State<HomeScreen> {
                 .where((x) =>
                     x.articleId == id.articleId && x.serverId == serverId)
                 .isEmpty) {
-              databaseService.deleteStarredId(id.articleId);
+              await databaseService.deleteStarredId(id.articleId);
             }
           }
         }
         dbStarredIds = await databaseService.starredIds();
-
-        //Getting for each tag/folder
-        for (Tag t in dbTags) {
-          dbTaggedIds = await databaseService.taggedIdsByTag(t.id);
-          //Adding new tagged ids to db
-          List<TaggedId> newTaggedIds =
-              await fetchTaggedIds(baseUrl, auth, t.id) ?? [];
-          for (TaggedId id in newTaggedIds) {
-            id.serverId = serverId;
-            id.tag = t.id;
-            if (dbTaggedIds.isEmpty ||
-                (dbTaggedIds.isNotEmpty &&
-                    dbTaggedIds
-                        .where((x) =>
-                            x.articleId == id.articleId &&
-                            x.serverId == serverId)
-                        .isEmpty)) {
-              databaseService.insertTaggedId(id);
-            }
+        for (StarredId starred in dbStarredIds) {
+          int id = starred.articleId;
+          Article? a = await databaseService.article(id);
+          if (a == null) {
+            missingIds += "i=$id&";
           }
-          //Removing old ids from db
-          dbTaggedIds = await databaseService.taggedIdsByTag(t.id);
-          if (dbTaggedIds.isNotEmpty) {
-            for (TaggedId id in dbTaggedIds) {
-              if (newTaggedIds
-                  .where((x) =>
-                      x.articleId == id.articleId && x.serverId == serverId)
-                  .isEmpty) {
-                databaseService.deleteTaggedId(id.articleId);
-              }
-            }
-          }
-          dbTaggedIds = await databaseService.taggedIdsByTag(t.id);
-          //TODO: Prepare data for tabs
-          List<Article> s = await databaseService.allArticlesByTag(t.id);
-          print(s.length);
         }
 
+        showStatus("Fetching all articles");
         //Fetch and insert new article contents
-        if (dbNewIds.isNotEmpty) {
-          String data = '';
-          for (NewId id in dbNewIds) {
-            String idString = id.articleId.toString();
-            data += "i=$idString&";
-          }
+        if (missingIds != '') {
           List<Article> newArticles =
-              await fetchNewArticleContents(baseUrl, auth, data) ?? [];
+              await fetchNewArticleContents(baseUrl, auth, missingIds) ?? [];
           for (Article newArticle in newArticles) {
             var document = parse(newArticle.summaryContent);
             List<dynamic> images = document.getElementsByTagName("img");
-            if (images.isNotEmpty && images[0].attributes.containsKey("src")) {
-              newArticle.imageUrl = images[0].attributes['src']!;
-              newArticle.serverId = serverId;
-              newArticle.id2 =
-                  int.parse(newArticle.id!.split("/").last, radix: 16);
-              if (dbArticles.isEmpty ||
-                  (dbArticles.isNotEmpty &&
-                      dbArticles
-                          .where((x) =>
-                              x.id == newArticle.id && x.serverId == serverId)
-                          .isEmpty)) {
-                // databaseService.insertArticle(newArticle);
-
-                List<String> articleCategories =
-                    castToListOfStrings(jsonDecode(newArticle.categories));
-                databaseService.insertArticleWithCategories(
-                    newArticle, articleCategories);
+            if (images.isNotEmpty) {
+              for (var img in images) {
+                if (img.attributes.containsKey("src") &&
+                    !img.attributes['src']!.startsWith('data:image')) {
+                  newArticle.imageUrl = img.attributes['src']!;
+                  break; // Stop after finding the first valid image
+                }
               }
             }
-          }
+            newArticle.serverId = serverId;
+            newArticle.id2 =
+                int.parse(newArticle.id!.split("/").last, radix: 16);
+            if (dbArticles.isEmpty ||
+                (dbArticles.isNotEmpty &&
+                    dbArticles
+                        .where((x) =>
+                            x.id == newArticle.id && x.serverId == serverId)
+                        .isEmpty)) {
+              // databaseService.insertArticle(newArticle);
 
-          dbArticles = await databaseService.articles();
-          //TODO: Sort Implementation, maybe lazy loading/pagination?
-          dbArticles.sort((b, a) => a.published.compareTo(b.published));
-          // print(dbArticles.length);
+              List<String> articleCategories =
+                  castToListOfStrings(jsonDecode(newArticle.categories));
+              await databaseService.insertArticleWithCategories(
+                  newArticle, articleCategories);
+            }
+          }
         }
+
+        favCategoryEntries =
+            await databaseService.getCategoryEntriesWithStarredArticles();
+        allCategoryEntries = await databaseService.getCategoryEntries();
+        newCategoryEntries =
+            await databaseService.getCategoryEntriesWithNewArticles();
+
+        showStatus("");
       }
     } on Exception catch (e) {
       // Handle error
@@ -298,6 +320,10 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(10.0),
+          child: Text(status),
+        ),
         actions: <Widget>[
           IconButton(
             icon: const Icon(CupertinoIcons.add),
@@ -344,15 +370,12 @@ class HomeScreenState extends State<HomeScreen> {
       body: PersistentTabView(
         context,
         controller: controller,
-        screens: _buildScreens(refreshFeeds, dbArticles, dbTags, dbFeeds),
+        screens: _buildScreens(refreshFeeds, favCategoryEntries,
+            newCategoryEntries, allCategoryEntries),
         items: _navBarsItems(),
-        handleAndroidBackButtonPress: true, // Default is true.
-        resizeToAvoidBottomInset:
-            true, // This needs to be true if you want to move up the screen on a non-scrollable screen when keyboard appears. Default is true.
-        stateManagement: true, // Default is true.
         hideNavigationBarWhenKeyboardAppears: true,
         padding: const EdgeInsets.only(top: 8),
-        backgroundColor: const Color.fromARGB(255, 31, 31, 31),
+        backgroundColor: const Color.fromARGB(255, 0, 0, 20),
         isVisible: true,
         animationSettings: const NavBarAnimationSettings(
           navBarItemAnimation: ItemAnimationSettings(
@@ -369,20 +392,20 @@ class HomeScreenState extends State<HomeScreen> {
         ),
         confineToSafeArea: true,
         navBarHeight: kBottomNavigationBarHeight,
-        navBarStyle:
-            NavBarStyle.style7, // Choose the nav bar style with this property
+        navBarStyle: NavBarStyle
+            .style12, // Choose the nav bar style with this property 7,12,13 are fav
       ),
     );
   }
 }
 
-List<Widget> _buildScreens(VoidCallback refreshFeeds,
-    List<Article> starredArticles, List<Tag> tags, List<Feed> feeds) {
+List<Widget> _buildScreens(
+  VoidCallback refreshFeeds,
+  List<CategoryEntry> favCatEntries,
+  List<CategoryEntry> newCatEntries,
+  List<CategoryEntry> allCatEntries,
+) {
   return [
-    // FavArticleList(
-    //   refreshParent: refreshFeeds,
-    //   articles: articles,
-    // ),
     isLocalLoading
         ? const CupertinoActivityIndicator(
             radius: 20.0,
@@ -390,6 +413,7 @@ List<Widget> _buildScreens(VoidCallback refreshFeeds,
           )
         : StarredArticleList(
             refreshParent: refreshFeeds,
+            categories: favCatEntries,
             path: 'fav',
           ),
     isLocalLoading
@@ -397,20 +421,21 @@ List<Widget> _buildScreens(VoidCallback refreshFeeds,
             radius: 20.0,
             color: Color.fromRGBO(76, 2, 232, 1),
           )
-        : FavArticleList(
+        : StarredArticleList(
             refreshParent: refreshFeeds,
-            articles: starredArticles,
+            categories: newCatEntries,
+            path: 'new',
           ),
-    // isLocalLoading
-    //     ? const CupertinoActivityIndicator(
-    //         radius: 20.0,
-    //         color: Color.fromRGBO(76, 2, 232, 1),
-    //       )
-    //     : StarredArticleList(
-    //         refreshParent: refreshFeeds,
-    //         path: 'new',
-    //       ),
-    const AllArticleList()
+    isLocalLoading
+        ? const CupertinoActivityIndicator(
+            radius: 20.0,
+            color: Color.fromRGBO(76, 2, 232, 1),
+          )
+        : StarredArticleList(
+            refreshParent: refreshFeeds,
+            categories: allCatEntries,
+            path: 'all',
+          ),
   ];
 }
 
@@ -419,12 +444,12 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
     PersistentBottomNavBarItem(
       icon: const Icon(CupertinoIcons.star),
       title: ("Starred"),
+      onSelectedTabPressWhenNoScreensPushed: () => {
+        HapticFeedback.mediumImpact(),
+      },
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
       activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
-      routeAndNavigatorSettings: const RouteAndNavigatorSettings(
-        initialRoute: "/new",
-      ),
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(CupertinoIcons.circle),
@@ -432,9 +457,9 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
       activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
-      routeAndNavigatorSettings: const RouteAndNavigatorSettings(
-        initialRoute: "/new",
-      ),
+      // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
+      //   initialRoute: "/new",
+      // ),
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(CupertinoIcons.line_horizontal_3_decrease),
@@ -442,45 +467,16 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
       activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
-      routeAndNavigatorSettings: const RouteAndNavigatorSettings(
-        initialRoute: "/new",
-      ),
+      // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
+      //   initialRoute: "/new",
+      // ),
     ),
   ];
 }
 
 // final currentRoutes = {
+//   "/fav": (final context) => const StarredArticleList(refreshParent: refresh,),
 //   "/all": (final context) => const AllArticleList(),
 //   "/new": (final context) => const NewArticleList(),
-//   "/fav": (final context) => const FavArticleList(refreshParent: refresh,),
 // };
 
-void _showOverlay(BuildContext context, String message) {
-  final overlay = Overlay.of(context);
-  final overlayEntry = OverlayEntry(
-    builder: (context) => Positioned(
-      top: 50,
-      child: Center(
-        child: Container(
-          color: Colors.transparent,
-          width: 500,
-          height: 100,
-          child: Center(
-            child: Text(
-              message,
-              style: const TextStyle(color: Colors.white, fontSize: 20),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  // Insert the overlay entry into the Overlay
-  overlay?.insert(overlayEntry);
-
-  // Remove the overlay after 100 milliseconds
-  // Future.delayed(Duration(milliseconds: 100), () {
-  //   overlayEntry.remove();
-  // });
-}

@@ -1,9 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:path_provider/path_provider.dart';
-
 String timeAgo(int timestampInMs) {
   final now = DateTime.now();
   final then = DateTime.fromMillisecondsSinceEpoch(timestampInMs * 1000);
@@ -34,5 +28,18 @@ List<String> castToListOfStrings(dynamic list) {
   } else {
     // Handle the case where the object is not a list
     throw ArgumentError('Expected a List of Strings');
+  }
+}
+
+bool isWithin24Hours(int timestampInMs) {
+  final now = DateTime.now();
+  final then = DateTime.fromMillisecondsSinceEpoch(timestampInMs * 1000);
+  final difference = now.difference(then);
+
+  final inHours = difference.inHours;
+  if (inHours <= 24) {
+    return true;
+  } else {
+    return false;
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/pages/article_view.dart';
 import 'package:feederr/utils/utils.dart';
@@ -30,29 +32,38 @@ class _ArticleListItemState extends State<ArticleListItem> {
             builder: (BuildContext context) {
               return Scaffold(
                 appBar: AppBar(
-                  leading: Container(),
-                  flexibleSpace: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Row(
-                        children: [
-                          CupertinoButton(
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  CupertinoIcons.back,
+                  // forceMaterialTransparency: true,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  flexibleSpace: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Row(
+                            children: [
+                              CupertinoButton(
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.back,
+                                    ),
+                                    Text('Back'),
+                                  ],
                                 ),
-                                Text('Back')
-                              ],
-                            ),
-                            onPressed: () => {
-                              Navigator.of(context, rootNavigator: true).pop(),
-                            },
+                                onPressed: () => {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop(),
+                                },
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
+                  leading: Container(),
                 ),
                 body: ArticleView(
                   article: widget.article,
@@ -135,12 +146,18 @@ class _ArticleListItemState extends State<ArticleListItem> {
       );
     } else {
       return GestureDetector(
-        child: Image.network(
-          widget.article.imageUrl,
-          errorBuilder: (context, exception, stackTrace) {
-            return const SizedBox(height: 40);
-          },
+        child: CachedNetworkImage(
+          imageUrl: src,
+          progressIndicatorBuilder: (context, url, downloadProgress) =>
+              const CupertinoActivityIndicator(),
+          errorWidget: (context, url, error) => Container(),
         ),
+        // child: Image.network(
+        //   widget.article.imageUrl,
+        //   errorBuilder: (context, exception, stackTrace) {
+        //     return const SizedBox(height: 40);
+        //   },
+        // ),
       );
     }
   }

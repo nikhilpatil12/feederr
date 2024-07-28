@@ -2,6 +2,7 @@ import 'dart:convert';
 
 class Feed {
   final String id;
+  final int? id2;
   final String title;
   final String categories;
   final String url;
@@ -12,6 +13,7 @@ class Feed {
 
   Feed({
     required this.id,
+    this.id2,
     required this.title,
     required this.categories,
     required this.url,
@@ -26,6 +28,7 @@ class Feed {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      // 'id2': id2,
       'title': title,
       'categories': categories,
       'url': url,
@@ -39,8 +42,22 @@ class Feed {
   factory Feed.fromMap(Map<String, dynamic> map) {
     return Feed(
       id: map['id'] ?? '',
+      id2: map['id2'] ?? 0,
       title: map['title'] ?? '',
       categories: jsonEncode(map['categories']),
+      url: map['url'] ?? '',
+      htmlUrl: map['htmlUrl'] ?? '',
+      iconUrl: map['iconUrl'] ?? '',
+      serverId: map['serverId'] ?? 0,
+      count: map['count'] ?? 0,
+    );
+  }
+  factory Feed.fromDBMap(Map<String, dynamic> map) {
+    return Feed(
+      id: map['id'] ?? '',
+      id2: map['id2'] ?? 0,
+      title: map['title'] ?? '',
+      categories: map['categories'],
       url: map['url'] ?? '',
       htmlUrl: map['htmlUrl'] ?? '',
       iconUrl: map['iconUrl'] ?? '',

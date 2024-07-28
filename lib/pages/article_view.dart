@@ -2,14 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:flutter/services.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
@@ -39,12 +38,13 @@ class _ArticleViewState extends State<ArticleView> {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 10),
               child: SelectableText(
                 // text: TextSpan(
                 // text: widget.article.title,
                 widget.article.title,
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
                 // ),
               ),
             ),
@@ -93,7 +93,7 @@ class _ArticleViewState extends State<ArticleView> {
             ),
             SelectableText.rich(
               textSpan,
-              style: TextStyle(fontSize: 16.0),
+              style: const TextStyle(fontSize: 16.0),
             ),
             // HtmlWidget(
             //   widget.article.summaryContent,
@@ -135,80 +135,164 @@ class _ArticleViewState extends State<ArticleView> {
 
   TextSpan _parseHtmlToTextSpan(dom.Element element) {
     List<InlineSpan> children = [];
-    element.nodes.forEach((node) {
+
+    for (var node in element.nodes) {
       if (node is dom.Text) {
         children.add(TextSpan(text: node.text));
       } else if (node is dom.Element) {
-        if (node.localName == 'b') {
-          children.add(TextSpan(
-            text: node.text,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ));
-        } else if (node.localName == 'i') {
-          children.add(TextSpan(
-            text: node.text,
-            style: TextStyle(fontStyle: FontStyle.italic),
-          ));
-        } else if (node.localName == 'a') {
-          final url = node.attributes['href'];
-          children.add(TextSpan(
-            text: node.text,
-            style: const TextStyle(
-                color: Color.fromRGBO(76, 2, 232, 1),
-                decoration: TextDecoration.none),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                if (url != null) {
-                  launchUrl(Uri.parse(url));
-                }
-              },
-          ));
-        } else if (node.localName == 'img') {
-          final src = node.attributes['src'];
-          if (src != null) {
+        switch (node.localName) {
+          case 'h1':
+          case 'h2':
+          case 'h3':
+          case 'h4':
+          case 'h5':
+          case 'h6':
+            children.add(TextSpan(
+              text: "\n${node.text}\n",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ));
+            break;
+          case 'b':
+            children.add(TextSpan(
+              text: node.text,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ));
+            break;
+          case 'cite':
+            children.add(TextSpan(
+              text: "${node.text}\n",
+              style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14),
+            ));
+            break;
+          case 'em':
+            children.add(TextSpan(
+              text: node.text,
+              style: const TextStyle(fontStyle: FontStyle.italic),
+            ));
+          case 'strong':
+            children.add(TextSpan(
+              text: node.text,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ));
+            break;
+          case 'i':
+            children.add(TextSpan(
+              text: node.text,
+              style: const TextStyle(fontStyle: FontStyle.italic),
+            ));
+            break;
+          case 'u':
+            children.add(TextSpan(
+              text: node.text,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ));
+            break;
+          case 'a':
+            final url = node.attributes['href'];
+            children.add(TextSpan(
+              text: node.text,
+              style: const TextStyle(
+                  color: Color.fromRGBO(76, 2, 232, 1),
+                  decoration: TextDecoration.none),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  if (url != null) {
+                    launchUrl(Uri.parse(url));
+                  }
+                },
+            ));
+            for (var element in node.children) {
+              if (element.localName == "span") {
+                children.addAll(_parseHtmlToTextSpan(node).children!);
+              }
+            }
+          // _parseHtmlToTextSpan(node).children!.any((x)=>x.=="img");
+
+          case 'img':
+            children.add(const TextSpan(text: '\n'));
+            final src = node.attributes['src'];
+            if (src != null) {
+              children.add(
+                WidgetSpan(
+                  child: _showImage(src),
+                ),
+              );
+            }
+            children.add(const TextSpan(text: '\n'));
+          case 'br':
+            children.add(const TextSpan(text: '\n'));
+            break;
+          case 'p':
+            children.add(const TextSpan(text: '\n'));
+            children.addAll(_parseHtmlToTextSpan(node).children!);
+            children.add(const TextSpan(text: '\n'));
+            break;
+          case 'span':
+            children.addAll(_parseHtmlToTextSpan(node).children!);
+            break;
+          case 'div':
+            children.addAll(_parseHtmlToTextSpan(node).children!);
+            break;
+          case 'figure':
+            children.addAll(_parseHtmlToTextSpan(node).children!);
+            break;
+          case 'figcaption':
             children.add(
-              WidgetSpan(
-                child: _showImage(src),
+              TextSpan(
+                text: "${node.text}\n",
+                style: const TextStyle(
+                    fontStyle: FontStyle.normal, fontSize: 12.0),
               ),
             );
-            // if (src.startsWith('data:image/')) {
-            //   // Handle Base64 image
-            //   final base64Data = src.split(',').last;
-            //   final imageBytes = base64Decode(base64Data);
-            //   children.add(
-            //     WidgetSpan(
-            //       child: GestureDetector(
-            //         child: Image.memory(Uint8List.fromList(imageBytes)),
-            //       ),
-            //     ),
-            //   );
-            // } else {
-            //   // Handle network image
-            //   children.add(
-            //     WidgetSpan(
-            //       child: GestureDetector(
-            //         onTap: () async {
-            //           //TODO
-            //         },
-            //         onLongPress: () async {
-            //           _showMenu(
-            //             context,
-            //           );
-            //           // await Clipboard.setData(ClipboardData(text: src));
-            //           // ScaffoldMessenger.of(context).showSnackBar(
-            //           //     SnackBar(content: Text('Image URL copied')));
-            //         },
-            //         child: Image.network(src),
-            //       ),
-            //     ),
-            //   );
-            // }
-          }
-        } else {
-          children.add(_parseHtmlToTextSpan(node));
+          case 'li':
+            children.add(TextSpan(
+              text: "\n◦ ${node.text}",
+              style: const TextStyle(fontWeight: FontWeight.normal),
+            ));
+          default:
+            children.addAll(_parseHtmlToTextSpan(node).children!);
+          // if (src.startsWith('data:image/')) {
+          //   // Handle Base64 image
+          //   final base64Data = src.split(',').last;
+          //   final imageBytes = base64Decode(base64Data);
+          //   children.add(
+          //     WidgetSpan(
+          //       child: GestureDetector(
+          //         child: Image.memory(Uint8List.fromList(imageBytes)),
+          //       ),
+          //     ),
+          //   );
+          // } else {
+          //   // Handle network image
+          //   children.add(
+          //     WidgetSpan(
+          //       child: GestureDetector(
+          //         onTap: () async {
+          //           //TODO
+          //         },
+          //         onLongPress: () async {
+          //           _showMenu(
+          //             context,
+          //           );
+          //           // await Clipboard.setData(ClipboardData(text: src));
+          //           // ScaffoldMessenger.of(context).showSnackBar(
+          //           //     SnackBar(content: Text('Image URL copied')));
+          //         },
+          //         child: Image.network(src),
+          //       ),
+          //     ),
+          //   );
+          // }
+          //   }
+          // } else {
+          //   children.add(_parseHtmlToTextSpan(node));
+          // }
         }
       }
-    });
+    }
     return TextSpan(children: children);
   }
 
@@ -217,6 +301,7 @@ class _ArticleViewState extends State<ArticleView> {
       // Handle Base64 image
       final base64Data = src.split(',').last;
       final imageBytes = base64Decode(base64Data);
+
       return GestureDetector(
         onLongPress: () async {
           //TODO
@@ -230,12 +315,18 @@ class _ArticleViewState extends State<ArticleView> {
           //TODO:
           // _showBlurMenu(context);
         },
-        child: Image.network(
-          src,
-          errorBuilder: (context, exception, stackTrace) {
-            return const SizedBox(height: 40);
-          },
+        child: CachedNetworkImage(
+          imageUrl: src,
+          progressIndicatorBuilder: (context, url, downloadProgress) =>
+              const CupertinoActivityIndicator(),
+          errorWidget: (context, url, error) => Container(),
         ),
+        // child: Image.network(
+        //   src,
+        //   errorBuilder: (context, exception, stackTrace) {
+        //     return const SizedBox(height: 40);
+        //   },
+        // ),
       );
     }
   }

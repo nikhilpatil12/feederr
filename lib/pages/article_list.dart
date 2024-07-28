@@ -2,11 +2,16 @@ import 'package:dio/dio.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/utils/dbhelper.dart';
 import 'package:feederr/widgets/article.dart';
-import 'package:flutter/material.dart';
-import 'package:feederr/utils/utils.dart';
+import 'package:flutter/cupertino.dart';
 
 class ArticleList extends StatefulWidget {
-  const ArticleList({super.key});
+  final VoidCallback refreshParent;
+  final List<Article> articles;
+  const ArticleList({
+    super.key,
+    required this.refreshParent,
+    required this.articles,
+  });
 
   @override
   ArticleListState createState() => ArticleListState();
@@ -45,22 +50,24 @@ class ArticleListState extends State<ArticleList> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: articles.length,
-              itemBuilder: (context, index) {
-                final article = articles[index];
-                return ArticleListItem(
-                  article: article,
-                );
-                // ListTile(
-                //   title: Text(article.title),
-                //   subtitle: Text(article.author),
-                // );
-              },
-            ),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      slivers: <Widget>[
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            widget.refreshParent();
+          },
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (BuildContext context, int index) =>
+                ArticleListItem(article: widget.articles[index]),
+            childCount: widget.articles.length,
+          ),
+        ),
+      ],
     );
   }
 }

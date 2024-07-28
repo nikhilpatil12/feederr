@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 class Category {
-  final int id;
+  final int? id;
   String name;
 
   Category({
-    required this.id,
+    this.id,
     required this.name,
   });
 
@@ -13,15 +13,15 @@ class Category {
   // columns in the database.
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      // 'id': id,
       'name': name,
     };
   }
 
   factory Category.fromMap(Map<String, dynamic> map) {
     return Category(
-      id: int.parse(map['id'] ?? '0'),
-      name: map['name'] ?? 0,
+      id: map['id'] ?? 0,
+      name: map['name'] ?? '',
     );
   }
 

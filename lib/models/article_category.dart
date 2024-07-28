@@ -20,7 +20,7 @@ class ArticleCategory {
 
   factory ArticleCategory.fromMap(Map<String, dynamic> map) {
     return ArticleCategory(
-      articleId: int.parse(map['article_id'] ?? '0'),
+      articleId: map['article_id'] ?? 0,
       categoryId: map['category_id'] ?? 0,
     );
   }

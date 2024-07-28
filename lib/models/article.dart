@@ -76,7 +76,7 @@ class Article {
       originTitle: map['origin']['title'] ?? '',
       summaryContent: map['summary']['content'] ?? '',
       author: map['author'] ?? '',
-      imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
+      imageUrl: map['imageUrl'] ?? '',
       serverId: map['serverId'] ?? 0,
     );
   }
@@ -90,7 +90,7 @@ class Article {
       title: map['title'] ?? '',
       canonical: map['canonical'] ?? '',
       alternate: map['alternate'] ?? '',
-      categories: jsonEncode(map['categories']),
+      categories: map['categories'],
       originStreamId: map['originStreamId'] ?? '',
       originHtmlUrl: map['origin_htmlUrl'] ?? '',
       originTitle: map['origin_title'] ?? '',

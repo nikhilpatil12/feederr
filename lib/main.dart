@@ -27,9 +27,7 @@ class MyApp extends StatelessWidget {
             surface: Color.fromRGBO(8, 8, 8, 1),
             onSurface: Color.fromRGBO(255, 255, 255, 1)),
       ),
-      home: const HomeScreen(
-        title: appTitle,
-      ),
+      home: const HomeScreen(title: appTitle),
     );
   }
 }

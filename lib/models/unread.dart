@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-class NewId {
+class UnreadId {
   final int articleId;
   int serverId;
 
-  NewId({
+  UnreadId({
     required this.articleId,
     required this.serverId,
   });
@@ -18,14 +18,14 @@ class NewId {
     };
   }
 
-  factory NewId.fromMap(Map<String, dynamic> map) {
-    return NewId(
+  factory UnreadId.fromMap(Map<String, dynamic> map) {
+    return UnreadId(
       articleId: int.parse(map['id'] ?? '0'),
       serverId: map['serverId'] ?? 0,
     );
   }
-  factory NewId.fromDBMap(Map<String, dynamic> map) {
-    return NewId(
+  factory UnreadId.fromDBMap(Map<String, dynamic> map) {
+    return UnreadId(
       articleId: map['articleId'] ?? 0,
       serverId: map['serverId'] ?? 0,
     );
@@ -33,7 +33,8 @@ class NewId {
 
   String toJson() => json.encode(toMap());
 
-  factory NewId.fromJson(String source) => NewId.fromMap(json.decode(source));
+  factory UnreadId.fromJson(String source) =>
+      UnreadId.fromMap(json.decode(source));
 
   // Implement toString to make it easier to see information about
   // each new_id when using the print statement.

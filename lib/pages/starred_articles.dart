@@ -1,27 +1,24 @@
-import 'dart:convert';
-import 'dart:ffi';
-
 import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feed.dart';
-import 'package:feederr/models/new.dart';
-import 'package:feederr/models/server.dart';
-import 'package:feederr/models/starred.dart';
-import 'package:feederr/models/tag.dart';
-import 'package:feederr/models/tagentry.dart';
+import 'package:feederr/models/feedentry.dart';
+import 'package:feederr/models/smart_categoryentry.dart';
+import 'package:feederr/models/categoryentry.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/widgets/article.dart';
-import 'package:feederr/widgets/tag.dart';
+import 'package:feederr/utils/utils.dart';
+import 'package:feederr/widgets/category.dart';
+import 'package:feederr/widgets/smart_category.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class StarredArticleList extends StatefulWidget {
   final VoidCallback refreshParent;
-  final List<TagEntry> tags = [];
+  final List<CategoryEntry> categories;
   final String path;
   StarredArticleList({
     super.key,
     required this.refreshParent,
     required this.path,
+    required this.categories,
   });
 
   @override
@@ -31,78 +28,78 @@ class StarredArticleList extends StatefulWidget {
 class _StarredArticleListState extends State<StarredArticleList> {
   DatabaseService databaseService = DatabaseService();
   bool isLocalLoading = false;
+  List<SmartCategoryEntry> smartCategories = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchFeedList();
+    _createSmartViews();
   }
 
-  Future<void> _fetchFeedList() async {
-    setState(() {
-      isLocalLoading = true;
-    });
-    try {
-      //Getting Server list
-      List<Server> serverList = await databaseService.servers();
-      if (serverList.isNotEmpty) {
-        List<Feed> dbFeeds = await databaseService.feeds();
-        List<Tag> dbTags = await databaseService.tags();
-        List<NewId> dbNewIds = await databaseService.newIds();
-        List<StarredId> dbStarredIds = await databaseService.starredIds();
-        List<Article> dbArticles = await databaseService.articles();
-
-        for (Tag tag in dbTags) {
-          for (Feed feed in dbFeeds) {
-            //Left yestereday
-            List<Article> tagArticles =
-                await databaseService.allArticlesByTag(tag.id);
-
-            List<Article> filteredArticles = tagArticles.where((article) {
-              var articleCategories =
-                  jsonDecode(jsonDecode(article.categories));
-              var feedCategories = jsonDecode(jsonDecode(feed.categories));
-
-              if (feedCategories is List) {
-                for (var feedCategory in feedCategories) {
-                  if (feedCategory is Map && feedCategory.containsKey('id')) {
-                    String feedCategoryId = feedCategory['id'];
-                    for (var articleCategory in articleCategories) {
-                      if (articleCategory == feedCategoryId) {
-                        return true;
-                      }
-                      // if (articleCategory is Map &&
-                      //     articleCategory.containsKey('id')) {
-                      //   if (articleCategory['id'] == feedCategoryId) {
-                      //     return true;
-                      //   }
-                      // }
-                    }
-                  }
-                }
-              }
-
-              return false;
-            }).toList();
-
-            print(tag.id);
-            print(feed.title);
-            print(filteredArticles.length);
+  Future<void> _createSmartViews() async {
+    List<Article> liTodayArticles = [];
+    List<Article> liAllArticles = [];
+    SmartCategoryEntry liTodayFeedEntries;
+    SmartCategoryEntry liAllFeedEntries;
+    List<FeedEntry> tempTodayFeedEntries = [];
+    List<FeedEntry> tempAllFeedEntries = [];
+    for (CategoryEntry categoryEntry in widget.categories) {
+      for (FeedEntry feedEntry in categoryEntry.feedEntry) {
+        List<Article> tempTodayArticles = [];
+        List<Article> tempAllArticles = [];
+        for (Article article in feedEntry.articles) {
+          if (isWithin24Hours(article.published)) {
+            liTodayArticles.add(article);
+            tempTodayArticles.add(article);
           }
+          liAllArticles.add(article);
+          tempAllArticles.add(article);
         }
-        // switch (widget.path) {
-        //   case 'fav':
-        //   case 'new':
-        //   case 'all':
-        // }
+        if (tempTodayArticles.isNotEmpty) {
+          tempTodayFeedEntries.add(
+            FeedEntry(
+                feed: feedEntry.feed,
+                articles: tempTodayArticles,
+                count: tempTodayArticles.length),
+          );
+        }
+        if (tempAllArticles.isNotEmpty) {
+          tempAllFeedEntries.add(FeedEntry(
+              feed: feedEntry.feed,
+              articles: tempAllArticles,
+              count: tempAllArticles.length));
+        }
       }
-    } on Exception catch (e) {
-      // Handle error
-    } finally {
-      setState(() {
-        isLocalLoading = false;
-      });
     }
+    if (tempAllFeedEntries.isNotEmpty) {
+      liAllFeedEntries = SmartCategoryEntry(
+          title: "All Articles",
+          articles: liAllArticles,
+          feeds: tempAllFeedEntries);
+      smartCategories.add(liAllFeedEntries);
+      if (tempTodayFeedEntries.isNotEmpty) {
+        liTodayFeedEntries = SmartCategoryEntry(
+            title: "Today",
+            articles: liTodayArticles,
+            feeds: tempTodayFeedEntries);
+        smartCategories.add(liTodayFeedEntries);
+      }
+    }
+    print(smartCategories.length);
+    // widget.smartCategories.add(
+    //   CategoryEntry(
+    //       category: Category(name: "All articles"),
+    //       feedEntry: [],
+    //       articles: [],
+    //       count: 10),
+    // );
+    // widget.smartCategories.add(
+    //   CategoryEntry(
+    //       category: Category(name: "Today"),
+    //       feedEntry: [],
+    //       articles: [],
+    //       count: 10),
+    // );
   }
 
   @override
@@ -118,10 +115,38 @@ class _StarredArticleListState extends State<StarredArticleList> {
           },
         ),
         SliverList(
+          delegate: SliverChildListDelegate(
+            [
+              Container(
+                padding: const EdgeInsets.all(10),
+                child: const Text("SMART VIEWS"),
+              ),
+            ],
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (BuildContext context, int index) => SmartCategoryListItem(
+              category: smartCategories[index],
+            ),
+            childCount: smartCategories.length,
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildListDelegate(
+            [
+              Container(
+                padding: const EdgeInsets.all(10),
+                child: const Text("FOLDERS"),
+              ),
+            ],
+          ),
+        ),
+        SliverList(
           delegate: SliverChildBuilderDelegate(
             (BuildContext context, int index) =>
-                TagListItem(tag: widget.tags[index]),
-            childCount: widget.tags.length,
+                CategoryListItem(category: widget.categories[index]),
+            childCount: widget.categories.length,
           ),
         ),
       ],

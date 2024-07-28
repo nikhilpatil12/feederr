@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 class FeedCategory {
-  final String feedId;
+  final int feedId;
   final int categoryId;
 
   FeedCategory({
@@ -20,7 +20,7 @@ class FeedCategory {
 
   factory FeedCategory.fromMap(Map<String, dynamic> map) {
     return FeedCategory(
-      feedId: map['feed_id'] ?? '',
+      feedId: map['feed_id'] ?? 0,
       categoryId: map['category_id'] ?? 0,
     );
   }
