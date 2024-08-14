@@ -17,9 +17,9 @@ class MyApp extends StatelessWidget {
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
         colorScheme: const ColorScheme(
-          background: Color.fromRGBO(205, 205, 205, 1),
+            // background: Color.fromRGBO(205, 205, 205, 1),
             primary: Color.fromRGBO(76, 2, 232, 1),
-            onBackground: Color.fromRGBO(205, 205, 205, 1),
+            // onBackground: Color.fromRGBO(205, 205, 205, 1),
             brightness: Brightness.dark,
             onPrimary: Color.fromRGBO(205, 205, 205, 1),
             secondary: Color.fromRGBO(60, 254, 207, 1),

@@ -8,7 +8,7 @@ import 'package:feederr/models/server.dart';
 import 'package:feederr/models/starred.dart';
 import 'package:feederr/models/tag.dart';
 import 'package:feederr/pages/add_server.dart';
-import 'package:feederr/pages/starred_articles.dart';
+import 'package:feederr/pages/article_tab.dart';
 import 'package:feederr/utils/api_utils.dart';
 import 'package:feederr/utils/dbhelper.dart';
 import 'package:feederr/utils/utils.dart';
@@ -275,6 +275,8 @@ class HomeScreenState extends State<HomeScreen> {
                 }
               }
             }
+            Feed feed = await databaseService.feed(newArticle.originStreamId);
+            newArticle.feedId = feed.id2 ?? 0;
             newArticle.serverId = serverId;
             newArticle.id2 =
                 int.parse(newArticle.id!.split("/").last, radix: 16);

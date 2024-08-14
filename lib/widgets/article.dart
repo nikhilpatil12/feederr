@@ -29,46 +29,44 @@ class _ArticleListItemState extends State<ArticleListItem> {
       onTap: () => {
         Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute<void>(
+            // fullscreenDialog: true,
             builder: (BuildContext context) {
               return Scaffold(
-                appBar: AppBar(
-                  // forceMaterialTransparency: true,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  flexibleSpace: ClipRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Row(
-                            children: [
-                              CupertinoButton(
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      CupertinoIcons.back,
-                                    ),
-                                    Text('Back'),
-                                  ],
+                  appBar: AppBar(
+                    // forceMaterialTransparency: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    flexibleSpace: ClipRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                        child: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Row(
+                              children: [
+                                CupertinoButton(
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        CupertinoIcons.back,
+                                      ),
+                                      Text('Back'),
+                                    ],
+                                  ),
+                                  onPressed: () => {
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop(),
+                                  },
                                 ),
-                                onPressed: () => {
-                                  Navigator.of(context, rootNavigator: true)
-                                      .pop(),
-                                },
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
+                    leading: Container(),
                   ),
-                  leading: Container(),
-                ),
-                body: ArticleView(
-                  article: widget.article,
-                ),
-              );
+                  body: ArticleView(article: widget.article));
             },
           ),
         ),
@@ -104,6 +102,7 @@ class _ArticleListItemState extends State<ArticleListItem> {
         ),
         padding: const EdgeInsets.all(10),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
@@ -136,14 +135,18 @@ class _ArticleListItemState extends State<ArticleListItem> {
     );
   }
 
-  GestureDetector _showImage(String src) {
+  Widget _showImage(String src) {
+    if (src == "") {
+      return Container();
+    }
     if (src.startsWith('data:image/')) {
+      return Container();
       // Handle Base64 image
-      final base64Data = src.split(',').last;
-      final imageBytes = base64Decode(base64Data);
-      return GestureDetector(
-        child: Image.memory(Uint8List.fromList(imageBytes)),
-      );
+      // final base64Data = src.split(',').last;
+      // final imageBytes = base64Decode(base64Data);
+      // return GestureDetector(
+      //   child: Image.memory(Uint8List.fromList(imageBytes)),
+      // );
     } else {
       return GestureDetector(
         child: CachedNetworkImage(

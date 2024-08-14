@@ -46,6 +46,10 @@ dependencies:
   url_launcher: ^6.3.0
   cached_network_image: ^3.3.1
   flutter_slidable: ^3.1.1
+  flutter_svg: ^2.0.10+1
+  http: ^1.2.2
+  shared_preferences: ^2.3.0
+  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_test:
@@ -85,17 +89,33 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
+  fonts:
+    - family: Cabinet Grotesk
+      fonts:
+        - asset: assets/fonts/CabinetGrotesk-Variable.ttf
+    - family: Chillax
+      fonts:
+        - asset: assets/fonts/Chillax-Variable.ttf
+    - family: Clash Grotesk
+      fonts:
+        - asset: assets/fonts/ClashGrotesk-Variable.ttf
+    - family: Comico
+      fonts:
+        - asset: assets/fonts/Comico-Regular.otf
+    - family: General Sans
+      fonts:
+        - asset: assets/fonts/GeneralSans-Variable.ttf
+        - asset: assets/fonts/GeneralSans-VariableItalic.ttf
+          style: italic
+    - family: New Title
+      fonts:
+        - asset: assets/fonts/NewTitle-Variable.ttf
+    - family: Supreme
+      fonts:
+        - asset: assets/fonts/Supreme-Variable.ttf
+        - asset: assets/fonts/Supreme-VariableItalic.ttf
+          style: italic
+
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

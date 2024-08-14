@@ -6,6 +6,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:http/http.dart' as http;
 
 class FeedListView extends StatefulWidget {
   const FeedListView({
@@ -156,15 +158,29 @@ class _FeedDetails extends StatelessWidget {
         children: <Widget>[
           Flexible(
             fit: FlexFit.tight,
-            child: CachedNetworkImage(
-              width: 20,
-              height: 20,
-              imageUrl: feed.feed.iconUrl,
-              progressIndicatorBuilder: (context, url, downloadProgress) =>
-                  const CupertinoActivityIndicator(),
-              errorWidget: (context, url, error) =>
-                  Image.asset("assets/rss-16.png"),
+            child: FutureBuilder(
+              future: _loadImage(feed.feed.iconUrl),
+              builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else if (snapshot.hasData) {
+                  return snapshot.data!; // The built widget
+                } else {
+                  return const Text('Something went wrong');
+                }
+              },
             ),
+            // CachedNetworkImage(
+            //   width: 20,
+            //   height: 20,
+            //   imageUrl: feed.feed.iconUrl,
+            //   progressIndicatorBuilder: (context, url, downloadProgress) =>
+            //       const CupertinoActivityIndicator(),
+            //   errorWidget: (context, url, error) =>
+            //       Image.asset("assets/rss-16.png"),
+            // ),
           ),
           const Padding(padding: EdgeInsets.only(left: 10)),
           Flexible(
@@ -202,6 +218,34 @@ class _FeedDetails extends StatelessWidget {
         // ),
       ),
     );
+  }
+
+  Future<Widget> _loadImage(String src) async {
+    try {
+      var response = await http.get(Uri.parse(src));
+      if (response.statusCode == 200) {
+        final contentType = response.headers['content-type'];
+        if (contentType?.startsWith('image/svg') ?? false) {
+          return SvgPicture.memory(response.bodyBytes);
+        } else {
+          return CachedNetworkImage(
+            width: 20,
+            height: 20,
+            imageUrl: feed.feed.iconUrl,
+            progressIndicatorBuilder: (context, url, downloadProgress) =>
+                const CupertinoActivityIndicator(),
+            errorWidget: (context, url, error) =>
+                Image.asset("assets/rss-16.png"),
+          );
+        }
+      } else {
+        // Handle error
+        return Container();
+      }
+    } catch (error) {
+      // Handle error
+      return Container();
+    }
   }
 }
 

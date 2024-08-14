@@ -55,10 +55,10 @@ class DatabaseService {
       'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)',
     );
     await db.execute(
-      'CREATE TABLE articles(id TEXT, id2 INTEGER PRIMARY KEY AUTOINCREMENT, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
+      'CREATE TABLE feed_list(id2 INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
     await db.execute(
-      'CREATE TABLE feed_list(id2 INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
+      'CREATE TABLE articles(id TEXT, id2 INTEGER PRIMARY KEY AUTOINCREMENT, crawlTimeMsec TEXT, timestampUsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_streamId TEXT, origin_htmlUrl TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, feedId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE, FOREIGN KEY (feedId) REFERENCES feed_list(id2) ON DELETE CASCADE)',
     );
     await db.execute(
       'CREATE TABLE articles_categories (article_id INTEGER, category_id INTEGER, PRIMARY KEY (article_id, category_id), FOREIGN KEY (article_id) REFERENCES articles(id2) ON DELETE CASCADE, FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE)',
@@ -259,10 +259,17 @@ class DatabaseService {
     }
   }
 
-  Future<Feed> feed(int id) async {
+  Future<Feed> feed(String id) async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps =
         await db.query('feed_list', where: 'id = ?', whereArgs: [id]);
+    return Feed.fromDBMap(maps[0]);
+  }
+
+  Future<Feed> feedById2(int id) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('feed_list', where: 'id2 = ?', whereArgs: [id]);
     return Feed.fromDBMap(maps[0]);
   }
 
