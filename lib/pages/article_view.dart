@@ -71,13 +71,15 @@ class _ArticleViewState extends State<ArticleView> {
               controller: _scrollController,
               child: Column(
                 children: [
-                  Padding(
+                  Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.only(bottom: 10),
                     child: SelectableText(
                       // text: TextSpan(
                       // text: widget.article.title,
                       widget.article.title,
                       textAlign: titleTextAlignment,
+
                       style: TextStyle(
                         fontSize: titleTextSize,
                         fontFamily: fontFamily,
@@ -219,6 +221,7 @@ class _ArticleViewState extends State<ArticleView> {
                     width: 10,
                     thickness: 1,
                     indent: 20,
+                    color: Colors.grey,
                   ),
                   IconButton(
                     color: Colors.grey,

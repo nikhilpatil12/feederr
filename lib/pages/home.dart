@@ -351,7 +351,8 @@ class HomeScreenState extends State<HomeScreen> {
             icon: const Icon(CupertinoIcons.settings_solid),
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
-            onPressed: () => {
+            onPressed: () {
+              // Old settings page
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
@@ -364,9 +365,60 @@ class HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-              ),
+              );
             },
+            // );
+            // },
           ),
+          // IconButton(
+          //   icon: const Icon(CupertinoIcons.settings_solid),
+          //   splashColor: Colors.transparent,
+          //   highlightColor: Colors.transparent,
+          //   onPressed: () => {
+          //     showModalBottomSheet(
+          //       scrollControlDisabledMaxHeightRatio: 0.95,
+          //       useSafeArea: true,
+          //       // isScrollControlled: true,
+          //       // isDismissible: true,
+          //       context: context,
+          //       enableDrag: true,
+          //       builder: (BuildContext context2) {
+          //         return const CupertinoPopupSurface(
+          //           child: Settings(),
+          //         );
+          //       },
+          //     ),
+          //     // Scaffold.of(context).showBottomSheet(
+          //     //   (context) {
+          //     //     return const Settings();
+          //     //   },
+          //     //   enableDrag: true,
+          //     // )
+          //   },
+
+          // ),
+          // showCupertinoModalPopup(
+          //           // useSafeArea: true,
+          //           // scrollControlDisabledMaxHeightRatio: 0.8,
+          //           // showDragHandle: true,
+          //           // isScrollControlled: true,
+          //           // useRootNavigator: true,
+          //           // isDismissible: false,
+          //           context: context,
+          //           // enableDrag: true,
+          //           // elevation: 100,
+          //           builder: (context) {
+          //             return DraggableScrollableSheet(
+          //               // expand: false,
+          //               // snap: true,
+          //               builder: (_, controller) {
+          //                 return const Settings();
+          //               },
+          //             );
+          //           },
+          //         )
+          //       },
+          // },
         ],
       ),
       body: PersistentTabView(
@@ -481,4 +533,3 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
 //   "/all": (final context) => const AllArticleList(),
 //   "/new": (final context) => const NewArticleList(),
 // };
-
