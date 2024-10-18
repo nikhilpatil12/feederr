@@ -1,16 +1,19 @@
-# feederr
+# Feederr
 
-A new Flutter project.
+Feederr is a Flutter-based RSS feed reader that allows users to manage and view articles from multiple RSS servers. It supports persistent storage of feeds, articles, and metadata like unread and starred items.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Add and manage multiple RSS servers.
+- Fetch and display articles, including their content, categories, and images.
+- Supports tags and folders for better feed organization.
+- Local caching of feeds, articles, and metadata.
+- Persistent navigation using bottom navigation bar.
+- Star and mark articles as unread for better tracking.
 
-A few resources to get you started if this is your first Flutter project:
+## Usage
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Add a new RSS server and authenticate.
+2. Fetch feeds and articles from the server.
+3. View and manage articles, starred items, and unread counts.
+4. Organize your feeds with tags and categories.
