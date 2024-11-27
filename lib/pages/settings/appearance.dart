@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:feederr/widgets/theme_preview.dart';
 import 'package:feederr/models/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppearanceSettings extends StatefulWidget {
   const AppearanceSettings({super.key});
@@ -116,28 +117,55 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
             children: [
               CupertinoFormRow(
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CupertinoButton(
-                      onPressed: () => {
-                        setState(() {
-                          // titleTextSize -= 0.5;
-                        })
-                      },
-                      child: const Icon(
-                        Icons.text_decrease,
-                        color: Colors.white,
-                      ),
+                    const Row(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Icon(CupertinoIcons.textformat_size),
+                        ),
+                        Text("Font Size"),
+                      ],
                     ),
-                    CupertinoButton(
-                      onPressed: () => {
-                        setState(() {
-                          // titleTextSize += 0.5;
-                        })
-                      },
-                      child: const Icon(
-                        Icons.text_increase,
-                        color: Colors.white,
+                    Container(
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(28, 253, 253, 253),
+                          borderRadius: BorderRadius.all(Radius.circular(10))),
+                      child: Row(
+                        children: [
+                          CupertinoButton(
+                            padding: const EdgeInsets.all(0),
+                            child: const Icon(
+                              Icons.remove,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => {
+                              setState(
+                                () {
+                                  // if ((lineSpacing - 0.2) > 1.5) {
+                                  //   lineSpacing -= 0.2;
+                                  // }
+                                },
+                              ),
+                            },
+                          ),
+                          SizedBox(child: Text("10")),
+                          CupertinoButton(
+                            padding: const EdgeInsets.all(0),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => {
+                              setState(
+                                () {
+                                  // lineSpacing += 0.2;
+                                },
+                              ),
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ],

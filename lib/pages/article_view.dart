@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
+import 'package:share_plus/share_plus.dart';
 
 class ArticleView extends StatefulWidget {
   Article article;
@@ -211,9 +212,7 @@ class _ArticleViewState extends State<ArticleView> {
                     color: Colors.grey,
                     onPressed: () => {
                       HapticFeedback.lightImpact(),
-                      setState(() {
-                        isStyleMenuVisible = !isStyleMenuVisible;
-                      })
+                      Share.share(widget.article.canonical),
                     },
                     icon: const Icon(CupertinoIcons.share),
                   ),
@@ -225,12 +224,16 @@ class _ArticleViewState extends State<ArticleView> {
                   ),
                   IconButton(
                     color: Colors.grey,
-                    onPressed: () => {},
+                    onPressed: () => {
+                      //TODO: Mark as read
+                    },
                     icon: const Icon(CupertinoIcons.circle),
                   ),
                   IconButton(
                     color: Colors.grey,
-                    onPressed: () => {},
+                    onPressed: () => {
+                      //TODO: Mark as fav
+                    },
                     icon: const Icon(CupertinoIcons.star),
                   ),
                   const VerticalDivider(
@@ -240,7 +243,9 @@ class _ArticleViewState extends State<ArticleView> {
                   ),
                   IconButton(
                     color: Colors.grey,
-                    onPressed: () => {},
+                    onPressed: () => {
+                      //TODO: Load Next article
+                    },
                     icon: const Icon(CupertinoIcons.chevron_right),
                   ),
                   const VerticalDivider(
