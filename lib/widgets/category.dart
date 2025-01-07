@@ -1,3 +1,4 @@
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/category.dart';
 import 'package:feederr/models/feed.dart';
@@ -14,9 +15,11 @@ class CategoryListItem extends StatefulWidget {
   const CategoryListItem({
     super.key,
     required this.category,
+    required this.theme,
   });
 
   final CategoryEntry category;
+  final AppTheme theme;
 
   @override
   State<CategoryListItem> createState() => _CategoryListItemState();
@@ -82,9 +85,9 @@ class _CategoryListItemState extends State<CategoryListItem>
                   ),
                 ),
                 body: ArticleList(
-                  refreshParent: () => {},
-                  articles: widget.category.articles,
-                ),
+                    refreshParent: () => {},
+                    articles: widget.category.articles,
+                    theme: widget.theme),
                 // Text(widget.ta
               );
             },
@@ -93,7 +96,7 @@ class _CategoryListItemState extends State<CategoryListItem>
       },
       onTapDown: (tapDetails) => {
         setState(() {
-          _color = const Color.fromRGBO(75, 2, 232, 0.186);
+          _color = Color(widget.theme.primaryColor);
         })
       },
       onTapUp: (tapDetails) => {
@@ -162,15 +165,15 @@ class _CategoryListItemState extends State<CategoryListItem>
                             ),
                           ),
                           body: ArticleList(
-                            refreshParent: () => {},
-                            articles: widget.category.articles,
-                          ),
+                              refreshParent: () => {},
+                              articles: widget.category.articles,
+                              theme: widget.theme),
                         );
                       },
                     ),
                   ),
                 },
-                backgroundColor: const Color.fromRGBO(76, 2, 232, 1),
+                backgroundColor: Color(widget.theme.primaryColor),
                 foregroundColor: Colors.white,
                 icon: CupertinoIcons.news,
                 // label: 'Delete',
@@ -192,7 +195,7 @@ class _CategoryListItemState extends State<CategoryListItem>
             maintainState: true,
             trailing: Container(
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 6, 0, 34),
+                color: Color(widget.theme.secondaryColor),
                 borderRadius: const BorderRadius.all(Radius.circular(8)),
                 border: Border.all(
                   width: 1,
@@ -230,15 +233,15 @@ class _CategoryListItemState extends State<CategoryListItem>
                             child: FadeTransition(opacity: anim, child: child),
                           ),
                           child: _currIndex == 0
-                              ? const Icon(CupertinoIcons.chevron_down,
+                              ? Icon(CupertinoIcons.chevron_down,
                                   size: 20,
-                                  color: Color.fromRGBO(255, 255, 255, 1),
-                                  key: ValueKey('icon1'))
-                              : const Icon(
+                                  color: Color(widget.theme.primaryColor),
+                                  key: const ValueKey('icon1'))
+                              : Icon(
                                   size: 20,
                                   CupertinoIcons.chevron_down,
-                                  color: Color.fromRGBO(76, 2, 232, 1),
-                                  key: ValueKey('icon2'),
+                                  color: Color(widget.theme.primaryColor),
+                                  key: const ValueKey('icon2'),
                                 ),
                         ),
                       ],
@@ -264,9 +267,9 @@ class _CategoryListItemState extends State<CategoryListItem>
               children: <Widget>[
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       CupertinoIcons.folder,
-                      color: Color.fromRGBO(76, 2, 232, 1),
+                      color: Color(widget.theme.primaryColor),
                     ),
                     const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 10)),
@@ -294,6 +297,7 @@ class _CategoryListItemState extends State<CategoryListItem>
                   articles: widget.category.articles,
                   feeds: widget.category.feedEntry,
                   count: widget.category.count,
+                  theme: widget.theme,
                 ),
               ),
             ],

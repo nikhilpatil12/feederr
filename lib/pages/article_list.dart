@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:dio/dio.dart';
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/pages/article_view.dart';
 import 'package:feederr/utils/dbhelper.dart';
@@ -13,10 +14,12 @@ import 'package:share_plus/share_plus.dart';
 class ArticleList extends StatefulWidget {
   final VoidCallback refreshParent;
   final List<Article> articles;
+  final AppTheme theme;
   const ArticleList({
     super.key,
     required this.refreshParent,
     required this.articles,
+    required this.theme,
   });
 
   @override
@@ -117,12 +120,17 @@ class ArticleListState extends State<ArticleList> {
                       // return ArticleListItem(article: widget.articles[index]);
                       if (animation.value > 0.7) {
                         return Material(
-                            child:
-                                ArticleView(article: widget.articles[index]));
+                          child: ArticleView(
+                              article: widget.articles[index],
+                              theme: widget.theme),
+                        );
                       } else {
                         return Material(
-                            child: ArticleListItem(
-                                article: widget.articles[index]));
+                          child: ArticleListItem(
+                            article: widget.articles[index],
+                            theme: widget.theme,
+                          ),
+                        );
                       }
                     },
                     // child: ArticleListItem(article: widget.articles[index]),
@@ -140,7 +148,7 @@ class ArticleListState extends State<ArticleList> {
             child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                  color: Color.fromARGB(255, 82, 82, 82),
+                  color: Color(widget.theme.primaryColor),
                   border: Border.all(width: 1),
                   borderRadius: const BorderRadius.all(Radius.circular(10))),
               child: Wrap(
@@ -229,16 +237,16 @@ class ArticleListState extends State<ArticleList> {
                       Container(
                         width: screenWidth * 0.9,
                         clipBehavior: Clip.antiAlias,
-                        decoration: const BoxDecoration(
-                          color: Color.fromARGB(255, 16, 0, 51),
-                          borderRadius: BorderRadius.all(
+                        decoration: BoxDecoration(
+                          color: Color(widget.theme.surfaceColor),
+                          borderRadius: const BorderRadius.all(
                             Radius.circular(10),
                           ),
                         ),
                         child: Column(
                           children: [
                             Container(
-                              color: const Color.fromARGB(255, 32, 0, 120),
+                              color: Color(widget.theme.primaryColor),
                               child: Padding(
                                 padding:
                                     const EdgeInsets.fromLTRB(20, 10, 10, 10),
@@ -340,16 +348,16 @@ class ArticleListState extends State<ArticleList> {
                       Container(
                         width: screenWidth * 0.9,
                         clipBehavior: Clip.antiAlias,
-                        decoration: const BoxDecoration(
-                          color: Color.fromARGB(255, 16, 0, 51),
-                          borderRadius: BorderRadius.all(
+                        decoration: BoxDecoration(
+                          color: Color(widget.theme.surfaceColor),
+                          borderRadius: const BorderRadius.all(
                             Radius.circular(10),
                           ),
                         ),
                         child: Column(
                           children: [
                             Container(
-                              color: const Color.fromARGB(255, 32, 0, 120),
+                              color: Color(widget.theme.primaryColor),
                               child: Padding(
                                 padding:
                                     const EdgeInsets.fromLTRB(20, 10, 10, 10),
@@ -389,7 +397,7 @@ class ArticleListState extends State<ArticleList> {
                                     icon: const Icon(Icons.arrow_downward),
                                     elevation: 0,
                                     dropdownColor:
-                                        const Color.fromARGB(255, 19, 0, 97),
+                                        Color(widget.theme.primaryColor),
                                     borderRadius: const BorderRadius.all(
                                         Radius.circular(20)),
                                     // style: const TextStyle(color: Colors.deepPurple),
@@ -428,7 +436,7 @@ class ArticleListState extends State<ArticleList> {
                                     icon: const Icon(Icons.arrow_downward),
                                     elevation: 0,
                                     dropdownColor:
-                                        const Color.fromARGB(255, 19, 0, 97),
+                                        Color(widget.theme.primaryColor),
                                     borderRadius: const BorderRadius.all(
                                         Radius.circular(20)),
                                     // style: const TextStyle(color: Colors.deepPurple),

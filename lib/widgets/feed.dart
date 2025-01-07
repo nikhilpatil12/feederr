@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feedentry.dart';
 import 'package:feederr/pages/article_list.dart';
@@ -15,18 +16,19 @@ class FeedListView extends StatefulWidget {
     required this.feeds,
     required this.articles,
     required this.count,
+    required this.theme,
   });
 
   final List<FeedEntry> feeds;
   final List<Article> articles;
   final int count;
+  final AppTheme theme;
 
   @override
   State<FeedListView> createState() => _FeedListViewState();
 }
 
 class _FeedListViewState extends State<FeedListView> {
-  Color _color = Colors.transparent;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -49,10 +51,10 @@ class _FeedListViewState extends State<FeedListView> {
           final articles = widget.articles;
           final count = widget.count;
           return FeedListItem(
-            feed: feed,
-            articles: articles,
-            count: count,
-          );
+              feed: feed,
+              articles: articles,
+              count: count,
+              theme: widget.theme);
         },
       ),
     );
@@ -65,11 +67,13 @@ class FeedListItem extends StatefulWidget {
     required this.feed,
     required this.articles,
     required this.count,
+    required this.theme,
   });
 
   final FeedEntry feed;
   final List<Article> articles;
   final int count;
+  final AppTheme theme;
 
   @override
   State<FeedListItem> createState() => _FeedListItemState();
@@ -80,10 +84,10 @@ class _FeedListItemState extends State<FeedListItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => {showFeed(context, widget.feed)},
+      onTap: () => {showFeed(context, widget.feed, widget.theme)},
       onTapDown: (tapDetails) => {
         setState(() {
-          _color = const Color.fromRGBO(75, 2, 232, 0.186);
+          _color = Color(widget.theme.primaryColor);
         })
       },
       onTapUp: (tapDetails) => {
@@ -109,9 +113,9 @@ class _FeedListItemState extends State<FeedListItem> {
           children: [
             SlidableAction(
               onPressed: (_) => {
-                showFeed(context, widget.feed),
+                showFeed(context, widget.feed, widget.theme),
               },
-              backgroundColor: const Color.fromRGBO(76, 2, 232, 1),
+              backgroundColor: Color(widget.theme.primaryColor),
               foregroundColor: Colors.white,
               icon: CupertinoIcons.news,
               // label: 'Delete',
@@ -131,9 +135,7 @@ class _FeedListItemState extends State<FeedListItem> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
-                child: _FeedDetails(
-                  feed: widget.feed,
-                ),
+                child: _FeedDetails(feed: widget.feed, theme: widget.theme),
               ),
             ],
           ),
@@ -144,9 +146,10 @@ class _FeedListItemState extends State<FeedListItem> {
 }
 
 class _FeedDetails extends StatelessWidget {
-  const _FeedDetails({required this.feed});
+  const _FeedDetails({required this.feed, required this.theme});
 
   final FeedEntry feed;
+  final AppTheme theme;
 
   @override
   Widget build(BuildContext context) {
@@ -203,10 +206,10 @@ class _FeedDetails extends StatelessWidget {
                   feed.count.toString(),
                   textAlign: TextAlign.right,
                 ),
-                const Icon(
+                Icon(
                   size: 20,
                   CupertinoIcons.right_chevron,
-                  color: const Color.fromRGBO(76, 2, 232, 1),
+                  color: Color(theme.primaryColor),
                 ),
               ],
             ),
@@ -249,7 +252,7 @@ class _FeedDetails extends StatelessWidget {
   }
 }
 
-void showFeed(BuildContext context, FeedEntry feed) {
+void showFeed(BuildContext context, FeedEntry feed, AppTheme theme) {
   HapticFeedback.mediumImpact();
   Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(
@@ -283,6 +286,7 @@ void showFeed(BuildContext context, FeedEntry feed) {
           body: ArticleList(
             refreshParent: () => {},
             articles: feed.articles,
+            theme: theme,
           ),
         );
       },

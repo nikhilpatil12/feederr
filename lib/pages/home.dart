@@ -18,16 +18,15 @@ import 'package:flutter/services.dart';
 import 'package:html/parser.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:feederr/pages/settings.dart';
+import 'package:feederr/models/app_theme.dart';
 
 bool isWebLoading = false;
 bool isLocalLoading = false;
 String status = "";
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({
-    super.key,
-    required this.title,
-  });
+  const HomeScreen({super.key, required this.title, required this.theme});
+  final AppTheme theme;
   final String title;
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -359,9 +358,35 @@ class HomeScreenState extends State<HomeScreen> {
                   builder: (BuildContext context) {
                     return Scaffold(
                       appBar: AppBar(
+                        leading: Container(),
+                        flexibleSpace: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Row(
+                              children: [
+                                CupertinoButton(
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        CupertinoIcons.back,
+                                      ),
+                                      Text('Back')
+                                    ],
+                                  ),
+                                  onPressed: () => {
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop(),
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         title: const Text('Settings'),
                       ),
-                      body: const Settings(),
+                      body: Settings(
+                        theme: widget.theme,
+                      ),
                     );
                   },
                 ),
@@ -424,9 +449,14 @@ class HomeScreenState extends State<HomeScreen> {
       body: PersistentTabView(
         context,
         controller: controller,
-        screens: _buildScreens(refreshFeeds, favCategoryEntries,
-            newCategoryEntries, allCategoryEntries),
-        items: _navBarsItems(),
+        screens: _buildScreens(
+          refreshFeeds,
+          favCategoryEntries,
+          newCategoryEntries,
+          allCategoryEntries,
+          widget.theme,
+        ),
+        items: _navBarsItems(widget.theme),
         hideNavigationBarWhenKeyboardAppears: true,
         padding: const EdgeInsets.only(top: 8),
         backgroundColor: const Color.fromARGB(255, 0, 0, 20),
@@ -458,6 +488,7 @@ List<Widget> _buildScreens(
   List<CategoryEntry> favCatEntries,
   List<CategoryEntry> newCatEntries,
   List<CategoryEntry> allCatEntries,
+  AppTheme theme,
 ) {
   return [
     isLocalLoading
@@ -469,6 +500,7 @@ List<Widget> _buildScreens(
             refreshParent: refreshFeeds,
             categories: favCatEntries,
             path: 'fav',
+            theme: theme,
           ),
     isLocalLoading
         ? const CupertinoActivityIndicator(
@@ -479,6 +511,7 @@ List<Widget> _buildScreens(
             refreshParent: refreshFeeds,
             categories: newCatEntries,
             path: 'new',
+            theme: theme,
           ),
     isLocalLoading
         ? const CupertinoActivityIndicator(
@@ -489,11 +522,12 @@ List<Widget> _buildScreens(
             refreshParent: refreshFeeds,
             categories: allCatEntries,
             path: 'all',
+            theme: theme,
           ),
   ];
 }
 
-List<PersistentBottomNavBarItem> _navBarsItems() {
+List<PersistentBottomNavBarItem> _navBarsItems(AppTheme theme) {
   return [
     PersistentBottomNavBarItem(
       icon: const Icon(CupertinoIcons.star),
@@ -503,14 +537,14 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       },
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
-      activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
+      activeColorSecondary: Color(theme.primaryColor),
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(CupertinoIcons.circle),
       title: ("New"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
-      activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
+      activeColorSecondary: Color(theme.primaryColor),
       // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
       //   initialRoute: "/new",
       // ),
@@ -520,7 +554,7 @@ List<PersistentBottomNavBarItem> _navBarsItems() {
       title: ("All"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
       inactiveColorPrimary: CupertinoColors.systemGrey,
-      activeColorSecondary: const Color.fromRGBO(76, 2, 232, 1),
+      activeColorSecondary: Color(theme.primaryColor),
       // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
       //   initialRoute: "/new",
       // ),

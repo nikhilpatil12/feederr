@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
@@ -15,8 +16,9 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:share_plus/share_plus.dart';
 
 class ArticleView extends StatefulWidget {
-  Article article;
-  ArticleView({super.key, required this.article});
+  final Article article;
+  final AppTheme theme;
+  const ArticleView({super.key, required this.article, required this.theme});
 
   @override
   State<ArticleView> createState() => _ArticleViewState();
@@ -55,7 +57,7 @@ class _ArticleViewState extends State<ArticleView> {
   @override
   Widget build(BuildContext context) {
     final document = html_parser.parse(widget.article.summaryContent);
-    final textSpan = _parseHtmlToTextSpan(document.body!);
+    final textSpan = _parseHtmlToTextSpan(document.body!, widget.theme);
 
     var screenWidth = MediaQuery.sizeOf(context).width;
     var screenHeight = MediaQuery.sizeOf(context).height;
@@ -66,7 +68,7 @@ class _ArticleViewState extends State<ArticleView> {
           controller: _scrollController,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 15),
-            color: const Color.fromARGB(255, 5, 0, 26),
+            color: Color(widget.theme.surfaceColor),
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: contentWidth),
               controller: _scrollController,
@@ -102,7 +104,7 @@ class _ArticleViewState extends State<ArticleView> {
                           fontSize: articleTextSize,
                           fontFamily: fontFamily,
                           fontVariations: const [FontVariation('wght', 600)],
-                          color: const Color.fromRGBO(76, 2, 232, 1),
+                          color: Color(widget.theme.primaryColor),
                         ),
                         children: <TextSpan>[
                           const TextSpan(
@@ -119,7 +121,7 @@ class _ArticleViewState extends State<ArticleView> {
                               fontVariations: const [
                                 FontVariation('wght', 300)
                               ],
-                              color: const Color.fromRGBO(231, 231, 231, 1),
+                              color: Color(widget.theme.textColor),
                             ),
                           ),
                           const TextSpan(
@@ -136,7 +138,7 @@ class _ArticleViewState extends State<ArticleView> {
                               fontVariations: const [
                                 FontVariation('wght', 300)
                               ],
-                              color: const Color.fromRGBO(231, 231, 231, 1),
+                              color: Color(widget.theme.textColor),
                             ),
                           ),
                         ],
@@ -199,9 +201,9 @@ class _ArticleViewState extends State<ArticleView> {
             padding: const EdgeInsets.only(bottom: 20),
             child: Container(
               clipBehavior: Clip.antiAlias,
-              decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 18, 0, 77),
-                borderRadius: BorderRadius.all(
+              decoration: BoxDecoration(
+                color: Color(widget.theme.secondaryColor),
+                borderRadius: const BorderRadius.all(
                   Radius.circular(5),
                 ),
               ),
@@ -284,8 +286,7 @@ class _ArticleViewState extends State<ArticleView> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
                                     Container(
-                                      color:
-                                          const Color.fromARGB(255, 9, 0, 38),
+                                      color: Color(widget.theme.secondaryColor),
                                       padding: const EdgeInsets.all(10),
                                       child: Center(
                                         child: Text(
@@ -750,7 +751,7 @@ class _ArticleViewState extends State<ArticleView> {
     );
   }
 
-  TextSpan _parseHtmlToTextSpan(dom.Element element) {
+  TextSpan _parseHtmlToTextSpan(dom.Element element, AppTheme theme) {
     List<InlineSpan> children = [];
 
     for (var node in element.nodes) {
@@ -811,8 +812,8 @@ class _ArticleViewState extends State<ArticleView> {
             final url = node.attributes['href'];
             children.add(TextSpan(
               text: node.text,
-              style: const TextStyle(
-                  color: Color.fromRGBO(76, 2, 232, 1),
+              style: TextStyle(
+                  color: Color(theme.primaryColor),
                   decoration: TextDecoration.none),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
@@ -823,7 +824,8 @@ class _ArticleViewState extends State<ArticleView> {
             ));
             for (var element in node.children) {
               if (element.localName == "span" && element.text != node.text) {
-                children.addAll(_parseHtmlToTextSpan(node).children!);
+                children
+                    .addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
               }
             }
           // _parseHtmlToTextSpan(node).children!.any((x)=>x.=="img");
@@ -845,17 +847,17 @@ class _ArticleViewState extends State<ArticleView> {
             break;
           case 'p':
             children.add(const TextSpan(text: '\n'));
-            children.addAll(_parseHtmlToTextSpan(node).children!);
+            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
             children.add(const TextSpan(text: '\n'));
             break;
           case 'span':
-            children.addAll(_parseHtmlToTextSpan(node).children!);
+            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
             break;
           case 'div':
-            children.addAll(_parseHtmlToTextSpan(node).children!);
+            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
             break;
           case 'figure':
-            children.addAll(_parseHtmlToTextSpan(node).children!);
+            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
             break;
           case 'figcaption':
             children.add(
@@ -871,7 +873,7 @@ class _ArticleViewState extends State<ArticleView> {
               style: const TextStyle(fontWeight: FontWeight.normal),
             ));
           default:
-            children.addAll(_parseHtmlToTextSpan(node).children!);
+            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
           // if (src.startsWith('data:image/')) {
           //   // Handle Base64 image
           //   final base64Data = src.split(',').last;

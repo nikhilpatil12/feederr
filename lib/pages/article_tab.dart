@@ -1,3 +1,4 @@
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feedentry.dart';
 import 'package:feederr/models/smart_categoryentry.dart';
@@ -13,11 +14,13 @@ class StarredArticleList extends StatefulWidget {
   final VoidCallback refreshParent;
   final List<CategoryEntry> categories;
   final String path;
+  final AppTheme theme;
   const StarredArticleList({
     super.key,
     required this.refreshParent,
     required this.path,
     required this.categories,
+    required this.theme,
   });
 
   @override
@@ -115,8 +118,7 @@ class _StarredArticleListState extends State<StarredArticleList> {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (BuildContext context, int index) => SmartCategoryListItem(
-                category: smartCategories[index],
-              ),
+                  category: smartCategories[index], theme: widget.theme),
               childCount: smartCategories.length,
             ),
           ),
@@ -132,8 +134,8 @@ class _StarredArticleListState extends State<StarredArticleList> {
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (BuildContext context, int index) =>
-                  CategoryListItem(category: widget.categories[index]),
+              (BuildContext context, int index) => CategoryListItem(
+                  category: widget.categories[index], theme: widget.theme),
               childCount: widget.categories.length,
             ),
           ),

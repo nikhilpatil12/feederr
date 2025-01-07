@@ -1,3 +1,4 @@
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/smart_categoryentry.dart';
 import 'package:feederr/pages/article_list.dart';
 import 'package:feederr/widgets/feed.dart';
@@ -7,11 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 class SmartCategoryListItem extends StatefulWidget {
-  const SmartCategoryListItem({
+  SmartCategoryListItem({
     super.key,
     required this.category,
+    required this.theme,
   });
-
+  AppTheme theme;
   final SmartCategoryEntry category;
 
   @override
@@ -80,6 +82,7 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
                 body: ArticleList(
                   refreshParent: () => {},
                   articles: widget.category.articles,
+                  theme: widget.theme,
                 ),
                 // Text(widget.ta
               );
@@ -89,7 +92,7 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
       },
       onTapDown: (tapDetails) => {
         setState(() {
-          _color = const Color.fromRGBO(75, 2, 232, 0.186);
+          _color = Color(widget.theme.primaryColor);
         })
       },
       onTapUp: (tapDetails) => {
@@ -158,15 +161,15 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
                             ),
                           ),
                           body: ArticleList(
-                            refreshParent: () => {},
-                            articles: widget.category.articles,
-                          ),
+                              refreshParent: () => {},
+                              articles: widget.category.articles,
+                              theme: widget.theme),
                         );
                       },
                     ),
                   ),
                 },
-                backgroundColor: const Color.fromRGBO(76, 2, 232, 1),
+                backgroundColor: Color(widget.theme.primaryColor),
                 foregroundColor: Colors.white,
                 icon: CupertinoIcons.news,
                 // label: 'Delete',
@@ -188,7 +191,7 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
             maintainState: true,
             trailing: Container(
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 6, 0, 34),
+                color: Color(widget.theme.secondaryColor),
                 borderRadius: const BorderRadius.all(Radius.circular(8)),
                 border: Border.all(
                   width: 1,
@@ -226,15 +229,15 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
                             child: FadeTransition(opacity: anim, child: child),
                           ),
                           child: _currIndex == 0
-                              ? const Icon(CupertinoIcons.chevron_down,
+                              ? Icon(CupertinoIcons.chevron_down,
                                   size: 20,
-                                  color: Color.fromRGBO(255, 255, 255, 1),
-                                  key: ValueKey('icon1'))
-                              : const Icon(
+                                  color: Color(widget.theme.primaryColor),
+                                  key: const ValueKey('icon1'))
+                              : Icon(
                                   size: 20,
                                   CupertinoIcons.chevron_down,
-                                  color: Color.fromRGBO(76, 2, 232, 1),
-                                  key: ValueKey('icon2'),
+                                  color: Color(widget.theme.primaryColor),
+                                  key: const ValueKey('icon2'),
                                 ),
                         ),
                       ],
@@ -260,9 +263,9 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
               children: <Widget>[
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       CupertinoIcons.folder,
-                      color: Color.fromRGBO(76, 2, 232, 1),
+                      color: Color(widget.theme.primaryColor),
                     ),
                     const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 10)),
@@ -290,6 +293,7 @@ class _SmartCategoryListItemState extends State<SmartCategoryListItem>
                   articles: widget.category.articles,
                   feeds: widget.category.feeds,
                   count: widget.category.feeds.length,
+                  theme: widget.theme,
                 ),
               ),
             ],

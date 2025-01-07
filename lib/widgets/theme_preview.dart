@@ -14,10 +14,10 @@ class ThemePreviewState extends State<ThemePreview> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.all(
+        borderRadius: const BorderRadius.all(
           Radius.circular(10),
         ),
-        color: Color(widget.theme.primaryColor),
+        color: Color(widget.theme.surfaceColor),
       ),
       clipBehavior: Clip.antiAlias,
       width: 150,
@@ -27,7 +27,7 @@ class ThemePreviewState extends State<ThemePreview> {
           Container(
             height: 50,
             color: Color(
-              widget.theme.primaryColor,
+              widget.theme.surfaceColor,
             ),
             child: Center(
               child: Container(
@@ -42,7 +42,7 @@ class ThemePreviewState extends State<ThemePreview> {
               Container(
                 height: 50,
                 color: Color(
-                  widget.theme.primaryColor,
+                  widget.theme.surfaceColor,
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(10),
@@ -52,7 +52,7 @@ class ThemePreviewState extends State<ThemePreview> {
                         width: 20,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: Color(widget.theme.accentColor),
+                          color: Color(widget.theme.primaryColor),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -71,7 +71,7 @@ class ThemePreviewState extends State<ThemePreview> {
               Container(
                 height: 50,
                 color: Color(
-                  widget.theme.primaryColor,
+                  widget.theme.surfaceColor,
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(10),
@@ -81,7 +81,7 @@ class ThemePreviewState extends State<ThemePreview> {
                         width: 20,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: Color(widget.theme.accentColor),
+                          color: Color(widget.theme.primaryColor),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -102,7 +102,7 @@ class ThemePreviewState extends State<ThemePreview> {
           Container(
             height: 50,
             color: Color(
-              widget.theme.primaryColor,
+              widget.theme.surfaceColor,
             ),
             child: Row(
               children: [
@@ -112,7 +112,7 @@ class ThemePreviewState extends State<ThemePreview> {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Color(widget.theme.accentColor),
+                      color: Color(widget.theme.primaryColor),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -123,7 +123,7 @@ class ThemePreviewState extends State<ThemePreview> {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Color(widget.theme.accentColor),
+                      color: Color(widget.theme.primaryColor),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -134,7 +134,7 @@ class ThemePreviewState extends State<ThemePreview> {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Color(widget.theme.accentColor),
+                      color: Color(widget.theme.primaryColor),
                       shape: BoxShape.circle,
                     ),
                   ),

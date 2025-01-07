@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/pages/article_view.dart';
 import 'package:feederr/utils/utils.dart';
@@ -13,9 +14,11 @@ class ArticleListItem extends StatefulWidget {
   const ArticleListItem({
     super.key,
     required this.article,
+    required this.theme,
   });
 
   final Article article;
+  final AppTheme theme;
 
   @override
   State<ArticleListItem> createState() => _ArticleListItemState();
@@ -32,48 +35,52 @@ class _ArticleListItemState extends State<ArticleListItem> {
             // fullscreenDialog: true,
             builder: (BuildContext context) {
               return Scaffold(
-                  appBar: AppBar(
-                    // forceMaterialTransparency: true,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    flexibleSpace: ClipRect(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
-                        child: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Row(
-                              children: [
-                                CupertinoButton(
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        CupertinoIcons.back,
-                                      ),
-                                      Text('Back'),
-                                    ],
-                                  ),
-                                  onPressed: () => {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop(),
-                                  },
+                appBar: AppBar(
+                  // forceMaterialTransparency: true,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  flexibleSpace: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Row(
+                            children: [
+                              CupertinoButton(
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.back,
+                                    ),
+                                    Text('Back'),
+                                  ],
                                 ),
-                              ],
-                            ),
+                                onPressed: () => {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop(),
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                    leading: Container(),
                   ),
-                  body: ArticleView(article: widget.article));
+                  leading: Container(),
+                ),
+                body: ArticleView(
+                  article: widget.article,
+                  theme: widget.theme,
+                ),
+              );
             },
           ),
         ),
       },
       onTapDown: (tapDetails) => {
         setState(() {
-          _color = Color.fromRGBO(75, 2, 232, 0.186);
+          _color = Color(widget.theme.primaryColor);
         })
       },
       onTapUp: (tapDetails) => {
@@ -107,9 +114,8 @@ class _ArticleListItemState extends State<ArticleListItem> {
           children: <Widget>[
             Expanded(
               flex: 3,
-              child: _ArticleDetails(
-                article: widget.article,
-              ),
+              child:
+                  _ArticleDetails(article: widget.article, theme: widget.theme),
             ),
             Expanded(
               flex: 1,
@@ -167,9 +173,10 @@ class _ArticleListItemState extends State<ArticleListItem> {
 }
 
 class _ArticleDetails extends StatelessWidget {
-  const _ArticleDetails({required this.article});
+  const _ArticleDetails({required this.article, required this.theme});
 
   final Article article;
+  final AppTheme theme;
 
   @override
   Widget build(BuildContext context) {
@@ -188,9 +195,9 @@ class _ArticleDetails extends StatelessWidget {
           const Padding(padding: EdgeInsets.symmetric(vertical: 2.0)),
           Text(
             article.originTitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.0,
-              color: Color.fromRGBO(76, 2, 232, 1),
+              color: Color(theme.primaryColor),
             ),
           ),
           const Padding(padding: EdgeInsets.symmetric(vertical: 1.0)),

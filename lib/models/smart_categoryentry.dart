@@ -1,6 +1,4 @@
 import 'package:feederr/models/article.dart';
-import 'package:feederr/models/category.dart';
-import 'package:feederr/models/feed.dart';
 import 'package:feederr/models/feedentry.dart';
 
 class SmartCategoryEntry {
