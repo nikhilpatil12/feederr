@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:feederr/models/app_theme.dart';
+import 'package:flutter/widgets.dart';
 
 class ThemePreview extends StatefulWidget {
   const ThemePreview({super.key, required this.theme});
@@ -13,22 +14,23 @@ class ThemePreviewState extends State<ThemePreview> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(
-          Radius.circular(10),
-        ),
-        color: Color(widget.theme.surfaceColor),
-      ),
-      clipBehavior: Clip.antiAlias,
+      // clipBehavior: Clip.antiAlias,
       width: 150,
-      height: 200,
+      height: 204,
+      decoration: BoxDecoration(
+        color: Color(
+          widget.theme.surfaceColor,
+        ),
+        border: Border.all(
+          color: Color(widget.theme.primaryColor),
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 50,
-            color: Color(
-              widget.theme.surfaceColor,
-            ),
             child: Center(
               child: Container(
                 width: 120,
@@ -39,11 +41,8 @@ class ThemePreviewState extends State<ThemePreview> {
           ),
           Column(
             children: [
-              Container(
+              SizedBox(
                 height: 50,
-                color: Color(
-                  widget.theme.surfaceColor,
-                ),
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Row(
@@ -68,11 +67,8 @@ class ThemePreviewState extends State<ThemePreview> {
                   ),
                 ),
               ),
-              Container(
+              SizedBox(
                 height: 50,
-                color: Color(
-                  widget.theme.surfaceColor,
-                ),
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Row(
@@ -101,8 +97,10 @@ class ThemePreviewState extends State<ThemePreview> {
           ),
           Container(
             height: 50,
-            color: Color(
-              widget.theme.surfaceColor,
+            decoration: BoxDecoration(
+              color: Color(widget.theme.secondaryColor),
+              // border: Border.all(color: Colors.transparent),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [

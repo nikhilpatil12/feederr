@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feed.dart';
 import 'package:feederr/models/categoryentry.dart';
+import 'package:feederr/models/font_settings.dart';
 import 'package:feederr/models/tagged_id.dart';
 import 'package:feederr/models/unread.dart';
 import 'package:feederr/models/server.dart';
@@ -9,8 +11,9 @@ import 'package:feederr/models/starred.dart';
 import 'package:feederr/models/tag.dart';
 import 'package:feederr/pages/add_server.dart';
 import 'package:feederr/pages/article_tab.dart';
-import 'package:feederr/utils/api_utils.dart';
+import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
+import 'package:feederr/utils/themeprovider.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -25,9 +28,11 @@ bool isLocalLoading = false;
 String status = "";
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.title, required this.theme});
-  final AppTheme theme;
-  final String title;
+  const HomeScreen({
+    super.key,
+    required this.themeProvider,
+  });
+  final ThemeProvider themeProvider;
   @override
   HomeScreenState createState() => HomeScreenState();
 }
@@ -44,13 +49,17 @@ class HomeScreenState extends State<HomeScreen> {
   List<CategoryEntry> newCategoryEntries = [];
   List<CategoryEntry> allCategoryEntries = [];
 
-  DatabaseService databaseService = DatabaseService();
+  final APIService api = APIService();
+  final DatabaseService databaseService = DatabaseService();
   void showStatus(String newStatus) async {
     status = newStatus;
-    // Remove the overlay after 100 milliseconds
-    // Future.delayed(Duration(milliseconds: 200), () {
-    //   status = "";
-    // });
+    setState(() {
+      status = newStatus;
+      // Remove the overlay after 100 milliseconds
+      // Future.delayed(Duration(milliseconds: 200), () {
+      //   status = "";
+      // });
+    });
   }
 
   void refreshFeeds() async {
@@ -73,22 +82,28 @@ class HomeScreenState extends State<HomeScreen> {
       //Getting Server list
       List<Server> serverList = await databaseService.servers();
       //TODO: remove
-      if (serverList.isEmpty) {
-        await databaseService.insertServer(Server(
-            baseUrl: "https://rss2.nikpatil.com",
-            userName: "nikhil",
-            password: "iamnik12@",
-            auth: "nikhil/144d26452b66538e16d0d26b01e0382ab0da7b3b"));
-        serverList = await databaseService.servers();
-      }
+      // if (serverList.isEmpty) {
+      //   await databaseService.insertServer(Server(
+      //       baseUrl: "https://rss2.nikpatil.com",
+      //       userName: "nikhil",
+      //       password: "iamnik12@",
+      //       auth: "nikhil/144d26452b66538e16d0d26b01e0382ab0da7b3b"));
+      //   serverList = await databaseService.servers();
+      // }
 
       if (serverList.isNotEmpty) {
         String baseUrl = serverList[0].baseUrl;
+        String userName = serverList[0].userName;
+        String password = serverList[0].password;
         String auth = serverList[0].auth ?? '';
         int serverId = serverList[0].id ?? 0;
+        if (auth == '') {
+          // Login and set the auth token
+          auth = await api.userLogin(baseUrl, userName, password);
+        }
         showStatus("Fetching feeds");
         //Getting feedlist from server(s)
-        List<Feed> feedList = await fetchFeedList(baseUrl, auth) ?? [];
+        List<Feed> feedList = await api.fetchFeedList(baseUrl, auth) ?? [];
         dbFeeds = await databaseService.feedsByServerId(serverId);
 
         dbTags = await databaseService.tags();
@@ -141,7 +156,7 @@ class HomeScreenState extends State<HomeScreen> {
         }
         showStatus("Fetching folders");
         //Getting taglist from server(s)
-        List<Tag> tagList = await fetchTagList(baseUrl, auth) ?? [];
+        List<Tag> tagList = await api.fetchTagList(baseUrl, auth) ?? [];
         //add new tags from server(s)
         for (Tag tag in tagList) {
           //saving to DB
@@ -170,7 +185,8 @@ class HomeScreenState extends State<HomeScreen> {
         dbTags = await databaseService.tags();
         showStatus("Fetching unread items");
         //Get Unread/New Ids
-        List<UnreadId> unreadIds = await fetchUnreadIds(baseUrl, auth) ?? [];
+        List<UnreadId> unreadIds =
+            await api.fetchUnreadIds(baseUrl, auth) ?? [];
         //Saving newids to db
         for (UnreadId id in unreadIds) {
           //saving to DB
@@ -197,6 +213,7 @@ class HomeScreenState extends State<HomeScreen> {
           }
         }
         dbUnreadIds = await databaseService.unreadIds();
+
         //Add missing IDs from database to the API query sring
         String missingIds = '';
         for (UnreadId unreadId in dbUnreadIds) {
@@ -209,7 +226,7 @@ class HomeScreenState extends State<HomeScreen> {
 
         for (Tag tag in dbTags) {
           List<TaggedId>? taggedIds =
-              await fetchTaggedIds(baseUrl, auth, tag.id);
+              await api.fetchTaggedIds(baseUrl, auth, tag.id);
           //Adding new tagged ids to db
           for (TaggedId taggedId in taggedIds!) {
             int id = taggedId.articleId;
@@ -220,9 +237,9 @@ class HomeScreenState extends State<HomeScreen> {
           }
         }
         // _showOverlay("Fetching new articles...");
-        //Get stearred Ids
+        //Get starred Ids
         List<StarredId> newStarredIds =
-            await fetchStarredIds(baseUrl, auth) ?? [];
+            await api.fetchStarredIds(baseUrl, auth) ?? [];
         //Saving new starred ids to db
         for (StarredId id in newStarredIds) {
           //saving to DB
@@ -261,7 +278,8 @@ class HomeScreenState extends State<HomeScreen> {
         //Fetch and insert new article contents
         if (missingIds != '') {
           List<Article> newArticles =
-              await fetchNewArticleContents(baseUrl, auth, missingIds) ?? [];
+              await api.fetchNewArticleContents(baseUrl, auth, missingIds) ??
+                  [];
           for (Article newArticle in newArticles) {
             var document = parse(newArticle.summaryContent);
             List<dynamic> images = document.getElementsByTagName("img");
@@ -294,18 +312,20 @@ class HomeScreenState extends State<HomeScreen> {
             }
           }
         }
-
-        favCategoryEntries =
-            await databaseService.getCategoryEntriesWithStarredArticles();
-        allCategoryEntries = await databaseService.getCategoryEntries();
-        newCategoryEntries =
-            await databaseService.getCategoryEntriesWithNewArticles();
-
-        showStatus("");
       }
-    } on Exception catch (e) {
+    } on Exception {
       // Handle error
+      print("Error");
     } finally {
+      showStatus("Fetching all articles.");
+      favCategoryEntries =
+          await databaseService.getCategoryEntriesWithStarredArticles();
+      showStatus("Fetching all articles..");
+      newCategoryEntries =
+          await databaseService.getCategoryEntriesWithNewArticles();
+      showStatus("Fetching all articles...");
+      allCategoryEntries = await databaseService.getCategoryEntries();
+      showStatus("");
       setState(() {
         isLocalLoading = false;
         isWebLoading = false;
@@ -316,30 +336,70 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     PersistentTabController controller;
-    controller = PersistentTabController(initialIndex: 0);
+    controller = PersistentTabController(initialIndex: 1);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(
+          "Feederr",
+          style: TextStyle(
+            color: Color(widget.themeProvider.theme.primaryColor),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(10.0),
-          child: Text(status),
+          child: status != ""
+              ? (Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(status),
+                  CupertinoActivityIndicator(
+                    color: Color(widget.themeProvider.theme.primaryColor),
+                    radius: 10,
+                  ),
+                ]))
+              : Container(),
         ),
         actions: <Widget>[
           IconButton(
+            color: Color(widget.themeProvider.theme.primaryColor),
             icon: const Icon(CupertinoIcons.add),
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
             onPressed: () => {
+              HapticFeedback.mediumImpact(),
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
                   builder: (BuildContext context) {
                     return Scaffold(
+                      // extendBodyBehindAppBar: true,
                       appBar: AppBar(
-                        title: const Text('Add Servers'),
+                        backgroundColor:
+                            Color(widget.themeProvider.theme.surfaceColor)
+                                .withAlpha(56),
+                        elevation: 0,
+                        title: Text(
+                          'Accounts',
+                          style: TextStyle(
+                            color: Color(widget.themeProvider.theme.textColor),
+                          ),
+                          overflow: TextOverflow.fade,
+                        ),
+                        flexibleSpace: ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: 36,
+                              sigmaY: 36,
+                            ),
+                            child: Container(
+                              color: Colors.transparent,
+                            ),
+                          ),
+                        ),
                       ),
-                      body: const ServerList(),
+                      body: ServerList(
+                        databaseService: databaseService,
+                        api: api,
+                      ),
                     );
                   },
                 ),
@@ -347,103 +407,52 @@ class HomeScreenState extends State<HomeScreen> {
             },
           ),
           IconButton(
+            color: Color(widget.themeProvider.theme.primaryColor),
             icon: const Icon(CupertinoIcons.settings_solid),
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
             onPressed: () {
-              // Old settings page
+              HapticFeedback.mediumImpact();
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
                   builder: (BuildContext context) {
                     return Scaffold(
+                      // extendBodyBehindAppBar: true,
                       appBar: AppBar(
-                        leading: Container(),
-                        flexibleSpace: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Row(
-                              children: [
-                                CupertinoButton(
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        CupertinoIcons.back,
-                                      ),
-                                      Text('Back')
-                                    ],
-                                  ),
-                                  onPressed: () => {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop(),
-                                  },
-                                ),
-                              ],
+                        backgroundColor:
+                            Color(widget.themeProvider.theme.surfaceColor)
+                                .withAlpha(56),
+                        elevation: 0,
+                        title: Text(
+                          'Settings',
+                          style: TextStyle(
+                            color: Color(widget.themeProvider.theme.textColor),
+                          ),
+                          overflow: TextOverflow.fade,
+                        ),
+                        flexibleSpace: ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: 36,
+                              sigmaY: 36,
+                            ),
+                            child: Container(
+                              color: Colors.transparent,
                             ),
                           ),
                         ),
-                        title: const Text('Settings'),
                       ),
                       body: Settings(
-                        theme: widget.theme,
+                        databaseService: databaseService,
+                        api: api,
                       ),
                     );
                   },
                 ),
               );
             },
-            // );
-            // },
           ),
-          // IconButton(
-          //   icon: const Icon(CupertinoIcons.settings_solid),
-          //   splashColor: Colors.transparent,
-          //   highlightColor: Colors.transparent,
-          //   onPressed: () => {
-          //     showModalBottomSheet(
-          //       scrollControlDisabledMaxHeightRatio: 0.95,
-          //       useSafeArea: true,
-          //       // isScrollControlled: true,
-          //       // isDismissible: true,
-          //       context: context,
-          //       enableDrag: true,
-          //       builder: (BuildContext context2) {
-          //         return const CupertinoPopupSurface(
-          //           child: Settings(),
-          //         );
-          //       },
-          //     ),
-          //     // Scaffold.of(context).showBottomSheet(
-          //     //   (context) {
-          //     //     return const Settings();
-          //     //   },
-          //     //   enableDrag: true,
-          //     // )
-          //   },
-
-          // ),
-          // showCupertinoModalPopup(
-          //           // useSafeArea: true,
-          //           // scrollControlDisabledMaxHeightRatio: 0.8,
-          //           // showDragHandle: true,
-          //           // isScrollControlled: true,
-          //           // useRootNavigator: true,
-          //           // isDismissible: false,
-          //           context: context,
-          //           // enableDrag: true,
-          //           // elevation: 100,
-          //           builder: (context) {
-          //             return DraggableScrollableSheet(
-          //               // expand: false,
-          //               // snap: true,
-          //               builder: (_, controller) {
-          //                 return const Settings();
-          //               },
-          //             );
-          //           },
-          //         )
-          //       },
-          // },
         ],
       ),
       body: PersistentTabView(
@@ -454,24 +463,27 @@ class HomeScreenState extends State<HomeScreen> {
           favCategoryEntries,
           newCategoryEntries,
           allCategoryEntries,
-          widget.theme,
+          widget.themeProvider.theme,
+          widget.themeProvider.fontSettings,
+          api,
+          databaseService,
         ),
-        items: _navBarsItems(widget.theme),
+        items: _navBarsItems(widget.themeProvider.theme),
         hideNavigationBarWhenKeyboardAppears: true,
         padding: const EdgeInsets.only(top: 8),
-        backgroundColor: const Color.fromARGB(255, 0, 0, 20),
+        backgroundColor: Color(widget.themeProvider.theme.secondaryColor),
         isVisible: true,
         animationSettings: const NavBarAnimationSettings(
           navBarItemAnimation: ItemAnimationSettings(
             // Navigation Bar's items animation properties.
-            duration: Duration(milliseconds: 400),
-            curve: Curves.ease,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInCirc,
           ),
           screenTransitionAnimation: ScreenTransitionAnimationSettings(
             // Screen transition animation on change of selected tab.
             animateTabTransition: true,
-            duration: Duration(milliseconds: 200),
-            screenTransitionAnimationType: ScreenTransitionAnimationType.fadeIn,
+            duration: Duration(milliseconds: 300),
+            screenTransitionAnimationType: ScreenTransitionAnimationType.slide,
           ),
         ),
         confineToSafeArea: true,
@@ -484,45 +496,50 @@ class HomeScreenState extends State<HomeScreen> {
 }
 
 List<Widget> _buildScreens(
-  VoidCallback refreshFeeds,
-  List<CategoryEntry> favCatEntries,
-  List<CategoryEntry> newCatEntries,
-  List<CategoryEntry> allCatEntries,
-  AppTheme theme,
-) {
+    VoidCallback refreshFeeds,
+    List<CategoryEntry> favCatEntries,
+    List<CategoryEntry> newCatEntries,
+    List<CategoryEntry> allCatEntries,
+    AppTheme theme,
+    FontSettings fontSettings,
+    APIService api,
+    DatabaseService databaseService) {
   return [
     isLocalLoading
         ? const CupertinoActivityIndicator(
             radius: 20.0,
             color: Color.fromRGBO(76, 2, 232, 1),
           )
-        : StarredArticleList(
+        : TabEntry(
             refreshParent: refreshFeeds,
             categories: favCatEntries,
             path: 'fav',
-            theme: theme,
+            api: api,
+            databaseService: databaseService,
           ),
     isLocalLoading
         ? const CupertinoActivityIndicator(
             radius: 20.0,
             color: Color.fromRGBO(76, 2, 232, 1),
           )
-        : StarredArticleList(
+        : TabEntry(
             refreshParent: refreshFeeds,
             categories: newCatEntries,
             path: 'new',
-            theme: theme,
+            api: api,
+            databaseService: databaseService,
           ),
     isLocalLoading
         ? const CupertinoActivityIndicator(
             radius: 20.0,
             color: Color.fromRGBO(76, 2, 232, 1),
           )
-        : StarredArticleList(
+        : TabEntry(
             refreshParent: refreshFeeds,
             categories: allCatEntries,
             path: 'all',
-            theme: theme,
+            api: api,
+            databaseService: databaseService,
           ),
   ];
 }
@@ -535,15 +552,15 @@ List<PersistentBottomNavBarItem> _navBarsItems(AppTheme theme) {
       onSelectedTabPressWhenNoScreensPushed: () => {
         HapticFeedback.mediumImpact(),
       },
-      activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-      inactiveColorPrimary: CupertinoColors.systemGrey,
+      activeColorPrimary: Color(theme.primaryColor),
+      inactiveColorPrimary: Color(theme.textColor),
       activeColorSecondary: Color(theme.primaryColor),
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(CupertinoIcons.circle),
       title: ("New"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-      inactiveColorPrimary: CupertinoColors.systemGrey,
+      inactiveColorPrimary: Color(theme.textColor),
       activeColorSecondary: Color(theme.primaryColor),
       // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
       //   initialRoute: "/new",
@@ -553,7 +570,7 @@ List<PersistentBottomNavBarItem> _navBarsItems(AppTheme theme) {
       icon: const Icon(CupertinoIcons.line_horizontal_3_decrease),
       title: ("All"),
       activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-      inactiveColorPrimary: CupertinoColors.systemGrey,
+      inactiveColorPrimary: Color(theme.textColor),
       activeColorSecondary: Color(theme.primaryColor),
       // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
       //   initialRoute: "/new",

@@ -3,7 +3,6 @@ import 'package:feederr/models/category.dart';
 import 'package:feederr/models/feed_category.dart';
 import 'package:feederr/models/categoryentry.dart';
 import 'package:feederr/models/feedentry.dart';
-import 'package:feederr/models/tagged_id.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/unread.dart';
@@ -144,6 +143,16 @@ class DatabaseService {
         maps.length, (index) => Article.fromDBMap(maps[index]));
   }
 
+  Future<StarredId?> starredId(int? articleId) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db
+        .query('starred_ids', where: 'articleId = ?', whereArgs: [articleId]);
+    if (maps.isNotEmpty) {
+      return StarredId.fromDBMap(maps[0]);
+    } else {
+      return null;
+    }
+  }
   // Future<List<Article>> allArticlesByTag(String tag) async {
   //   final db = await _databaseService.database;
   //   final List<Map<String, dynamic>> articles = await db.rawQuery('''
@@ -185,7 +194,7 @@ class DatabaseService {
   Future<Article?> article(int id) async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps =
-        await db.query('articles', where: 'id = ?', whereArgs: [id]);
+        await db.query('articles', where: 'id2 = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Article.fromDBMap(maps[0]);
     } else {
@@ -569,6 +578,27 @@ class DatabaseService {
       final articles =
           articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
+      List<UnreadId>? liUnreadIds = await unreadIds();
+      List<StarredId>? liStarredIds = await starredIds();
+      for (Article article in articles) {
+        article.isStarred = true;
+        article.isRead = false;
+
+        if (liUnreadIds
+            .where((element) => element.articleId == article.id2)
+            .isNotEmpty) {
+          article.isRead = false;
+        } else {
+          article.isRead = true;
+        }
+        if (liStarredIds
+            .where((element) => element.articleId == article.id2)
+            .isNotEmpty) {
+          article.isStarred = true;
+        } else {
+          article.isStarred = false;
+        }
+      }
       // Create the CategoryEntry
       categoryEntries.add(CategoryEntry(
           category: category,
@@ -606,7 +636,7 @@ class DatabaseService {
         JOIN starred_ids ON articles.id2 = starred_ids.articleId
         WHERE articles.origin_streamId = ?
       ''', [feed.id]);
-        final feedArticles =
+        List<Article> feedArticles =
             feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
 
         if (feedArticles.isNotEmpty) {
@@ -625,6 +655,19 @@ class DatabaseService {
       final articles =
           articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
+      List<UnreadId>? liUnreadIds = await unreadIds();
+      for (Article article in articles) {
+        article.isStarred = true;
+        article.isRead = false;
+
+        if (liUnreadIds
+            .where((element) => element.articleId == article.id2)
+            .isNotEmpty) {
+          article.isRead = false;
+        } else {
+          article.isRead = true;
+        }
+      }
       // Create the CategoryEntry
       if (feedEntries.isNotEmpty) {
         categoryEntries.add(CategoryEntry(
@@ -667,8 +710,10 @@ class DatabaseService {
         final feedArticles =
             feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-        feedEntries.add(FeedEntry(
-            feed: feed, articles: feedArticles, count: feedArticles.length));
+        if (feedArticles.isNotEmpty) {
+          feedEntries.add(FeedEntry(
+              feed: feed, articles: feedArticles, count: feedArticles.length));
+        }
       }
 
       // Get articles for the category
@@ -681,12 +726,27 @@ class DatabaseService {
       final articles =
           articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
+      // List<UnreadId> liUnreadId = await unreadIds();
+      List<StarredId>? liStarredIds = await starredIds();
+      for (Article article in articles) {
+        article.isRead = false;
+        // StarredId starred = ;
+        if (liStarredIds
+            .where((element) => element.articleId == article.id2)
+            .isNotEmpty) {
+          article.isStarred = true;
+        } else {
+          article.isStarred = false;
+        }
+      }
       // Create the CategoryEntry
-      categoryEntries.add(CategoryEntry(
-          category: category,
-          feedEntry: feedEntries,
-          articles: articles,
-          count: articles.length));
+      if (feedEntries.isNotEmpty) {
+        categoryEntries.add(CategoryEntry(
+            category: category,
+            feedEntry: feedEntries,
+            articles: articles,
+            count: articles.length));
+      }
     }
 
     return categoryEntries;

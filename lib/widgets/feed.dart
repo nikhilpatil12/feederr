@@ -1,14 +1,21 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/feedentry.dart';
+import 'package:feederr/models/font_settings.dart';
 import 'package:feederr/pages/article_list.dart';
+import 'package:feederr/utils/apiservice.dart';
+import 'package:feederr/utils/dbhelper.dart';
+import 'package:feederr/utils/themeprovider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 class FeedListView extends StatefulWidget {
   const FeedListView({
@@ -16,13 +23,15 @@ class FeedListView extends StatefulWidget {
     required this.feeds,
     required this.articles,
     required this.count,
-    required this.theme,
+    required this.api,
+    required this.databaseService,
   });
 
   final List<FeedEntry> feeds;
   final List<Article> articles;
   final int count;
-  final AppTheme theme;
+  final APIService api;
+  final DatabaseService databaseService;
 
   @override
   State<FeedListView> createState() => _FeedListViewState();
@@ -31,32 +40,23 @@ class FeedListView extends StatefulWidget {
 class _FeedListViewState extends State<FeedListView> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // clipBehavior: Clip.antiAlias,
-      // decoration: BoxDecoration(
-      //   color: _color,
-      //   borderRadius: const BorderRadius.all(
-      //     Radius.circular(10),
-      //   ),
-      // ),
-      // padding: EdgeInsets.only(
-      //   left: MediaQuery.sizeOf(context).width / 10,
-      // ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        padding: const EdgeInsets.all(0),
-        itemCount: widget.feeds.length,
-        itemBuilder: (context, index) {
-          final feed = widget.feeds[index];
-          final articles = widget.articles;
-          final count = widget.count;
-          return FeedListItem(
-              feed: feed,
-              articles: articles,
-              count: count,
-              theme: widget.theme);
-        },
-      ),
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(0),
+      itemCount: widget.feeds.length,
+      itemBuilder: (context, index) {
+        final feed = widget.feeds[index];
+        final articles = widget.articles;
+        final count = widget.count;
+        return FeedListItem(
+          feed: feed,
+          articles: articles,
+          count: count,
+          api: widget.api,
+          databaseService: widget.databaseService,
+        );
+      },
     );
   }
 }
@@ -67,13 +67,14 @@ class FeedListItem extends StatefulWidget {
     required this.feed,
     required this.articles,
     required this.count,
-    required this.theme,
+    required this.api,
+    required this.databaseService,
   });
-
   final FeedEntry feed;
   final List<Article> articles;
   final int count;
-  final AppTheme theme;
+  final APIService api;
+  final DatabaseService databaseService;
 
   @override
   State<FeedListItem> createState() => _FeedListItemState();
@@ -83,97 +84,110 @@ class _FeedListItemState extends State<FeedListItem> {
   Color _color = Colors.transparent;
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => {showFeed(context, widget.feed, widget.theme)},
-      onTapDown: (tapDetails) => {
-        setState(() {
-          _color = Color(widget.theme.primaryColor);
-        })
-      },
-      onTapUp: (tapDetails) => {
-        Future.delayed(const Duration(milliseconds: 200), () {
+    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+      return GestureDetector(
+        onTap: () => {
+          showFeed(context, widget.feed, themeProvider.theme,
+              themeProvider.fontSettings, widget.api, widget.databaseService)
+        },
+        onTapDown: (tapDetails) => {
           setState(() {
-            _color = const Color.fromARGB(0, 0, 0, 0);
-            // code to be executed after 2 seconds
-          });
-        })
-      },
-      onTapCancel: () => {
-        Future.delayed(const Duration(milliseconds: 200), () {
-          setState(() {
-            _color = const Color.fromARGB(0, 0, 0, 0);
-            // code to be executed after 2 seconds
-          });
-        })
-      },
-      child: Slidable(
-        // Specify a key if the Slidable is dismissible.
-        endActionPane: ActionPane(
-          motion: const ScrollMotion(),
-          children: [
-            SlidableAction(
-              onPressed: (_) => {
-                showFeed(context, widget.feed, widget.theme),
-              },
-              backgroundColor: Color(widget.theme.primaryColor),
-              foregroundColor: Colors.white,
-              icon: CupertinoIcons.news,
-              // label: 'Delete',
-            ),
-          ],
-        ),
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: _color,
-            //   borderRadius: const BorderRadius.all(
-            //     Radius.circular(10),
-            // ),
-          ),
-          padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: _FeedDetails(feed: widget.feed, theme: widget.theme),
+            _color = Color(themeProvider.theme.primaryColor);
+          })
+        },
+        onTapUp: (tapDetails) => {
+          Future.delayed(const Duration(milliseconds: 200), () {
+            setState(() {
+              _color = const Color.fromARGB(0, 0, 0, 0);
+              // code to be executed after 2 seconds
+            });
+          })
+        },
+        onTapCancel: () => {
+          Future.delayed(const Duration(milliseconds: 200), () {
+            setState(() {
+              _color = const Color.fromARGB(0, 0, 0, 0);
+              // code to be executed after 2 seconds
+            });
+          })
+        },
+        child: Slidable(
+          // Specify a key if the Slidable is dismissible.
+          endActionPane: ActionPane(
+            motion: const ScrollMotion(),
+            children: [
+              SlidableAction(
+                onPressed: (_) => {
+                  showFeed(
+                      context,
+                      widget.feed,
+                      themeProvider.theme,
+                      themeProvider.fontSettings,
+                      widget.api,
+                      widget.databaseService),
+                },
+                backgroundColor: Color(themeProvider.theme.primaryColor),
+                foregroundColor: Colors.white,
+                icon: CupertinoIcons.news,
+                // label: 'Delete',
               ),
             ],
           ),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: _color,
+              //   borderRadius: const BorderRadius.all(
+              //     Radius.circular(10),
+              // ),
+            ),
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: _FeedDetails(feed: widget.feed),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
 class _FeedDetails extends StatelessWidget {
-  const _FeedDetails({required this.feed, required this.theme});
+  const _FeedDetails({required this.feed});
 
   final FeedEntry feed;
-  final AppTheme theme;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-          left: MediaQuery.sizeOf(context).width / 10, top: 8, bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Flexible(
-            fit: FlexFit.tight,
-            child: FutureBuilder(
-              future: _loadImage(feed.feed.iconUrl),
-              builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else if (snapshot.hasData) {
-                  return snapshot.data!; // The built widget
-                } else {
-                  return const Text('Something went wrong');
-                }
-              },
+    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+      return Padding(
+        padding: EdgeInsets.only(
+            left: MediaQuery.sizeOf(context).width / 10, top: 8, bottom: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Flexible(
+              fit: FlexFit.tight,
+              child: FutureBuilder(
+                future: _loadImage(feed.feed.iconUrl),
+                builder:
+                    (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Image.asset("assets/rss-16.png");
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else if (snapshot.hasData) {
+                    return snapshot.data!; // The built widget
+                  } else {
+                    return const Text('Something went wrong');
+                  }
+                },
+              ),
             ),
             // CachedNetworkImage(
             //   width: 20,
@@ -184,43 +198,47 @@ class _FeedDetails extends StatelessWidget {
             //   errorWidget: (context, url, error) =>
             //       Image.asset("assets/rss-16.png"),
             // ),
-          ),
-          const Padding(padding: EdgeInsets.only(left: 10)),
-          Flexible(
-            flex: 10,
-            fit: FlexFit.tight,
-            child: Text(
-              feed.feed.title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14.0,
+            const Padding(padding: EdgeInsets.only(left: 10)),
+            Flexible(
+              flex: 10,
+              fit: FlexFit.tight,
+              child: Text(
+                feed.feed.title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14.0,
+                  color: Color(themeProvider.theme.textColor),
+                ),
               ),
             ),
-          ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
-            child: Wrap(
-              children: [
-                Text(
-                  feed.count.toString(),
-                  textAlign: TextAlign.right,
-                ),
-                Icon(
-                  size: 20,
-                  CupertinoIcons.right_chevron,
-                  color: Color(theme.primaryColor),
-                ),
-              ],
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+              child: Wrap(
+                children: [
+                  Text(
+                    feed.count.toString(),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Color(themeProvider.theme.primaryColor),
+                    ),
+                  ),
+                  Icon(
+                    size: 20,
+                    CupertinoIcons.right_chevron,
+                    color: Color(themeProvider.theme.primaryColor),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-        // Icon(
-        //   CupertinoIcons.right_chevron,
-        //   color: const Color.fromRGBO(76, 2, 232, 1),
-        // ),
-      ),
-    );
+          ],
+          // Icon(
+          //   CupertinoIcons.right_chevron,
+          //   color: const Color.fromRGBO(76, 2, 232, 1),
+          // ),
+        ),
+      );
+    });
   }
 
   Future<Widget> _loadImage(String src) async {
@@ -252,33 +270,37 @@ class _FeedDetails extends StatelessWidget {
   }
 }
 
-void showFeed(BuildContext context, FeedEntry feed, AppTheme theme) {
+void showFeed(
+    BuildContext context,
+    FeedEntry feed,
+    AppTheme theme,
+    FontSettings fontSettings,
+    APIService api,
+    DatabaseService databaseService) {
   HapticFeedback.mediumImpact();
   Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(
       builder: (BuildContext context) {
         return Scaffold(
+          // extendBodyBehindAppBar: true,
           appBar: AppBar(
-            leading: Container(),
-            flexibleSpace: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  children: [
-                    CupertinoButton(
-                      child: const Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.back,
-                          ),
-                          Text('Back')
-                        ],
-                      ),
-                      onPressed: () => {
-                        Navigator.of(context, rootNavigator: true).pop(),
-                      },
-                    ),
-                  ],
+            backgroundColor: Color(theme.surfaceColor).withAlpha(56),
+            elevation: 0,
+            title: Text(
+              feed.feed.title,
+              style: TextStyle(
+                color: Color(theme.textColor),
+              ),
+              overflow: TextOverflow.fade,
+            ),
+            flexibleSpace: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: 36,
+                  sigmaY: 36,
+                ),
+                child: Container(
+                  color: Colors.transparent,
                 ),
               ),
             ),
@@ -286,7 +308,8 @@ void showFeed(BuildContext context, FeedEntry feed, AppTheme theme) {
           body: ArticleList(
             refreshParent: () => {},
             articles: feed.articles,
-            theme: theme,
+            api: api,
+            databaseService: databaseService,
           ),
         );
       },

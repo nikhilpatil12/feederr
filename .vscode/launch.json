@@ -1,10 +1,34 @@
 {
     "configurations": [
         {
-            "name": "Flutter",
+            "name": "Flutter Android",
             "program": "lib/main.dart",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "deviceId": "RFCN70CLCJP"
+        },
+        {
+            "name": "Flutter Sim",
+            "program": "lib/main.dart",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "218D7E80-45B0-40C4-A3A0-7F5DEEC8CFA8",
+            "flutterMode": "debug",
+        },
+        {
+            "name": "Flutter Pixel Sucks",
+            "program": "lib/main.dart",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "00008120-000E51603A9B401E",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Flutter Mac",
+            "program": "lib/main.dart",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "macos"
         }
     ]
 }

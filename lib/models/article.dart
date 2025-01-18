@@ -18,6 +18,9 @@ class Article {
   String imageUrl;
   int serverId;
   int feedId;
+  final Article? nextArticle;
+  bool? isRead;
+  bool? isStarred;
 
   Article({
     required this.id,
@@ -37,6 +40,9 @@ class Article {
     required this.imageUrl,
     required this.serverId,
     required this.feedId,
+    this.nextArticle,
+    this.isRead,
+    this.isStarred,
   });
 
   // Convert a Article into a Map. The keys must correspond to the names of the

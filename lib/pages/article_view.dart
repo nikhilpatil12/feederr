@@ -1,54 +1,55 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
+import 'package:feederr/models/server.dart';
+import 'package:feederr/utils/apiservice.dart';
+import 'package:feederr/utils/dbhelper.dart';
+import 'package:feederr/utils/themeprovider.dart';
 import 'package:feederr/utils/utils.dart';
+import 'package:feederr/widgets/actionbar.dart';
+import 'package:feederr/widgets/webview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
-import 'package:share_plus/share_plus.dart';
+
+enum View { webview, articleview }
+
+Map<View, Icon> views = <View, Icon>{
+  View.webview: const Icon(CupertinoIcons.globe),
+  View.articleview: const Icon(Icons.article),
+};
 
 class ArticleView extends StatefulWidget {
-  final Article article;
-  final AppTheme theme;
-  const ArticleView({super.key, required this.article, required this.theme});
+  final List<Article> articles;
+  final int articleIndex;
+  final APIService api;
+  final DatabaseService databaseService;
+
+  const ArticleView({
+    super.key,
+    required this.articles,
+    required this.articleIndex,
+    required this.api,
+    required this.databaseService,
+  });
 
   @override
   State<ArticleView> createState() => _ArticleViewState();
 }
 
 class _ArticleViewState extends State<ArticleView> {
-  final ScrollController _scrollController = ScrollController();
-
   bool isStyleMenuVisible = false;
-
-  double articleTextSize = 16.0;
-  double titleTextSize = 28.0;
-  TextAlign articleTextAlignment = TextAlign.left;
-  TextAlign titleTextAlignment = TextAlign.left;
-  double lineSpacing = 1.5;
-  double contentWidth = 5;
-  List<String> fonts = [
-    "Cabinet Grotesk",
-    "Chillax",
-    "Comico",
-    "Clash Grotesk",
-    "General Sans",
-    "New Title",
-    "Supreme"
-  ];
-  String fontFamily = "General Sans";
 
   bool isPopupImageVisible = false;
   String popupImageSrc = "";
   String popupImageCaption = "";
+  View selectedView = View.articleview;
   @override
   void initState() {
     super.initState();
@@ -56,699 +57,350 @@ class _ArticleViewState extends State<ArticleView> {
 
   @override
   Widget build(BuildContext context) {
-    final document = html_parser.parse(widget.article.summaryContent);
-    final textSpan = _parseHtmlToTextSpan(document.body!, widget.theme);
-
     var screenWidth = MediaQuery.sizeOf(context).width;
     var screenHeight = MediaQuery.sizeOf(context).height;
-    return Stack(
-      children: [
-        Scrollbar(
-          thumbVisibility: true,
-          controller: _scrollController,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            color: Color(widget.theme.surfaceColor),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: contentWidth),
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: SelectableText(
-                      // text: TextSpan(
-                      // text: widget.article.title,
-                      widget.article.title,
-                      textAlign: titleTextAlignment,
-
-                      style: TextStyle(
-                        fontSize: titleTextSize,
-                        fontFamily: fontFamily,
-                        fontVariations: const [FontVariation('wght', 600)],
-                      ),
-                      // style: TextStyle(
-                      //     fontSize: titleTextSize, fontWeight: FontWeight.w600),
-                      // ),
+    final PageController pageController =
+        PageController(initialPage: widget.articleIndex);
+    Article article = widget.articles[widget.articleIndex];
+    _markArticleAsRead(article.id2 ?? 0, article.serverId);
+    article.isRead = true;
+    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+      return Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor:
+              Color(themeProvider.theme.surfaceColor).withAlpha(56),
+          elevation: 0,
+          centerTitle: true,
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: 36,
+                sigmaY: 36,
+              ),
+              child: Container(
+                color: Colors.transparent,
+                child: SafeArea(
+                  child: Center(
+                    child: CupertinoSlidingSegmentedControl<View>(
+                      // padding: EdgeInsets.all(8),
+                      // unselectedColor:
+                      //     Color(themeProvider.theme.surfaceColor),
+                      // selectedColor: Color(themeProvider.theme.primaryColor),
+                      backgroundColor: Color(themeProvider.theme.textColor)
+                          .withValues(alpha: 0.5),
+                      thumbColor: Color(themeProvider.theme.primaryColor),
+                      groupValue: selectedView,
+                      children: <View, Widget>{
+                        View.webview: Icon(CupertinoIcons.globe),
+                        View.articleview: Icon(Icons.article),
+                      },
+                      onValueChanged: (View? value) {
+                        if (value != null) {
+                          setState(() {
+                            selectedView = value;
+                          });
+                        }
+                      },
                     ),
                   ),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: RichText(
-                      textAlign: TextAlign.left,
-                      text: TextSpan(
-                        text: widget.article.originTitle,
-                        style: TextStyle(
-                          fontSize: articleTextSize,
-                          fontFamily: fontFamily,
-                          fontVariations: const [FontVariation('wght', 600)],
-                          color: Color(widget.theme.primaryColor),
-                        ),
-                        children: <TextSpan>[
-                          const TextSpan(
-                            text: '・',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: widget.article.author,
-                            style: TextStyle(
-                              fontSize: articleTextSize,
-                              fontFamily: fontFamily,
-                              fontVariations: const [
-                                FontVariation('wght', 300)
-                              ],
-                              color: Color(widget.theme.textColor),
-                            ),
-                          ),
-                          const TextSpan(
-                            text: '・',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: timeAgo(widget.article.published),
-                            style: TextStyle(
-                              fontSize: articleTextSize,
-                              fontFamily: fontFamily,
-                              fontVariations: const [
-                                FontVariation('wght', 300)
-                              ],
-                              color: Color(widget.theme.textColor),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SelectableText.rich(
-                    textSpan,
-                    textAlign: articleTextAlignment,
-                    style: TextStyle(
-                        height: lineSpacing, //line spacing
-                        letterSpacing: 0, //letter spacing
-                        fontSize: articleTextSize,
-                        fontFamily: fontFamily,
-                        // fontWeight: FontWeight.w100,
-                        // fontStyle: FontStyle.normal,
-                        fontVariations: const [FontVariation('wght', 400)]),
-                  ),
-                  const SizedBox(height: 80),
-                  // HtmlWidget(
-                  //   widget.article.summaryContent,
-                  //   enableCaching: true,
-                  //   customWidgetBuilder: (element) {
-                  //     if (element.localName == 'p') {
-                  //       return SelectableText.rich(
-                  //         _parseHtmlToTextSpan(element),
-                  //         style: TextStyle(fontSize: 16.0),
-                  //       );
-                  //     }
-                  //     if (element.localName == 'img') {
-                  //       final src = element.attributes['src'];
-                  //       if (src != null) {
-                  //         return Image.network(src);
-                  //       }
-                  //     }
-                  //     return null;
-                  //   },
-                  //   renderMode: RenderMode.column,
-                  //   textStyle: TextStyle(fontSize: 14),
-                  //   customStylesBuilder: (element) {
-                  //     if (element.attributes.containsKey("href")) {
-                  //       return {
-                  //         'color': "0xFF4C02E8",
-                  //         'font-weight': "bold",
-                  //         "text-decoration-line": "none"
-                  //       };
-                  //     }
-
-                  //     return null;
-                  //   },
-                  // ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Container(
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: Color(widget.theme.secondaryColor),
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(5),
-                ),
-              ),
-              child: Wrap(
-                children: [
-                  IconButton(
-                    highlightColor: Colors.transparent,
-                    color: Colors.grey,
-                    onPressed: () => {
-                      HapticFeedback.lightImpact(),
-                      Share.share(widget.article.canonical),
-                    },
-                    icon: const Icon(CupertinoIcons.share),
-                  ),
-                  const VerticalDivider(
-                    width: 10,
-                    thickness: 1,
-                    indent: 20,
-                    color: Colors.grey,
-                  ),
-                  IconButton(
-                    color: Colors.grey,
-                    onPressed: () => {
-                      //TODO: Mark as read
-                    },
-                    icon: const Icon(CupertinoIcons.circle),
-                  ),
-                  IconButton(
-                    color: Colors.grey,
-                    onPressed: () => {
-                      //TODO: Mark as fav
-                    },
-                    icon: const Icon(CupertinoIcons.star),
-                  ),
-                  const VerticalDivider(
-                    width: 10,
-                    thickness: 1,
-                    indent: 20,
-                  ),
-                  IconButton(
-                    color: Colors.grey,
-                    onPressed: () => {
-                      //TODO: Load Next article
-                    },
-                    icon: const Icon(CupertinoIcons.chevron_right),
-                  ),
-                  const VerticalDivider(
-                    width: 10,
-                    thickness: 1,
-                    indent: 20,
-                  ),
-                  IconButton(
-                    highlightColor: Colors.transparent,
-                    color: Colors.grey,
-                    onPressed: () => {
-                      HapticFeedback.lightImpact(),
-                      showModalBottomSheet(
-                        shape: const BeveledRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10))),
-                        useSafeArea: true,
-                        scrollControlDisabledMaxHeightRatio: 0.8,
-                        // showDragHandle: true,
-                        isScrollControlled: true,
-                        useRootNavigator: true,
-                        isDismissible: false,
-                        context: context,
-                        enableDrag: true,
-                        elevation: 100,
-                        builder: (context) {
-                          return DraggableScrollableSheet(
-                            expand: false,
-                            snap: true,
-                            builder: (_, controller) {
-                              return SingleChildScrollView(
-                                controller: controller,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Container(
-                                      color: Color(widget.theme.secondaryColor),
-                                      padding: const EdgeInsets.all(10),
-                                      child: Center(
-                                        child: Text(
-                                          'Style',
+        body: PageView.builder(
+            onPageChanged: ((int index) => {
+                  article = widget.articles[index],
+                  _markArticleAsRead(article.id2 ?? 0, article.serverId),
+                }),
+            itemCount: widget.articles.length,
+            controller: pageController,
+            itemBuilder: (BuildContext ctxt, int index) {
+              article = widget.articles[index];
+              article.isRead = true;
+              final document = html_parser.parse(article.summaryContent);
+              final textSpan =
+                  _parseHtmlToTextSpan(document.body!, themeProvider.theme);
+              final ScrollController scrollController = ScrollController();
+              return SafeArea(
+                bottom: false,
+                child: Stack(
+                  children: [
+                    selectedView == View.articleview
+                        ? RawScrollbar(
+                            interactive: true,
+                            thumbColor: Color(themeProvider.theme.primaryColor),
+                            thickness: 4,
+                            radius: const Radius.circular(1),
+                            // thumbVisibility: true,
+                            controller: scrollController,
+                            child: ScrollConfiguration(
+                              behavior: ScrollConfiguration.of(context)
+                                  .copyWith(scrollbars: false),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 15),
+                                color: Color(themeProvider.theme.surfaceColor),
+                                child: SingleChildScrollView(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: themeProvider
+                                          .fontSettings.articleContentWidth),
+                                  controller: scrollController,
+                                  child: Column(
+                                    children: [
+                                      // Padding(
+                                      //   padding: EdgeInsets.all(60),
+                                      // ),
+                                      Container(
+                                        width: double.infinity,
+                                        padding:
+                                            const EdgeInsets.only(bottom: 10),
+                                        child: SelectableText(
+                                          article.title,
+                                          textAlign: themeProvider
+                                              .fontSettings.titleAlignment,
                                           style: TextStyle(
-                                            fontSize: articleTextSize,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: themeProvider
+                                                .fontSettings.titleFontSize,
+                                            fontFamily: themeProvider
+                                                .fontSettings.articleFont,
+                                            fontVariations: const [
+                                              FontVariation('wght', 600)
+                                            ],
+                                            color: Color(
+                                                themeProvider.theme.textColor),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    CupertinoFormSection(
-                                      header: const Text("COLORS"),
-                                      children: [
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 40,
-                                                height: 40,
-                                                color: Colors.amber,
-                                              ),
-                                              Container(
-                                                width: 40,
-                                                height: 40,
-                                                color: Colors.green,
-                                              ),
-                                              Container(
-                                                width: 40,
-                                                height: 40,
-                                                color: Colors.red,
-                                              ),
-                                              Container(
-                                                width: 40,
-                                                height: 40,
-                                                color: const Color.fromARGB(
-                                                    255, 7, 255, 90),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    CupertinoFormSection(
-                                      header: const Text("TITLE"),
-                                      children: [
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    titleTextSize -= 0.5;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  Icons.text_decrease,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    titleTextSize += 0.5;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  Icons.text_increase,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    titleTextAlignment =
-                                                        TextAlign.left;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  CupertinoIcons.text_alignleft,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    titleTextAlignment =
-                                                        TextAlign.center;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  CupertinoIcons
-                                                      .text_aligncenter,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    titleTextAlignment =
-                                                        TextAlign.right;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  CupertinoIcons
-                                                      .text_alignright,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    CupertinoFormSection(
-                                      header: const Text("ARTICLE"),
-                                      children: [
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    articleTextSize -= 0.5;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  Icons.text_decrease,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    articleTextSize += 0.5;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  Icons.text_increase,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    articleTextAlignment =
-                                                        TextAlign.left;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  CupertinoIcons.text_alignleft,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    articleTextAlignment =
-                                                        TextAlign.center;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  CupertinoIcons
-                                                      .text_aligncenter,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              CupertinoButton(
-                                                onPressed: () => {
-                                                  setState(() {
-                                                    articleTextAlignment =
-                                                        TextAlign.right;
-                                                  })
-                                                },
-                                                child: const Icon(
-                                                  CupertinoIcons
-                                                      .text_alignright,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Row(
-                                                children: [
-                                                  Padding(
-                                                    padding: EdgeInsets.all(10),
-                                                    child: Icon(Icons.height),
-                                                  ),
-                                                  Text("Line Spacing"),
-                                                ],
-                                              ),
-                                              Container(
-                                                decoration: const BoxDecoration(
-                                                    color: Color.fromARGB(
-                                                        28, 253, 253, 253),
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(
-                                                                10))),
-                                                child: Row(
-                                                  children: [
-                                                    CupertinoButton(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              0),
-                                                      child: const Icon(
-                                                        Icons.remove,
-                                                        color: Colors.white,
-                                                      ),
-                                                      onPressed: () => {
-                                                        setState(
-                                                          () {
-                                                            if ((lineSpacing -
-                                                                    0.2) >
-                                                                1.5) {
-                                                              lineSpacing -=
-                                                                  0.2;
-                                                            }
-                                                          },
-                                                        ),
-                                                      },
-                                                    ),
-                                                    CupertinoButton(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              0),
-                                                      child: const Icon(
-                                                        Icons.add,
-                                                        color: Colors.white,
-                                                      ),
-                                                      onPressed: () => {
-                                                        setState(
-                                                          () {
-                                                            lineSpacing += 0.2;
-                                                          },
-                                                        ),
-                                                      },
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        CupertinoFormRow(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Row(
-                                                children: [
-                                                  Padding(
-                                                    padding: EdgeInsets.all(10),
-                                                    child:
-                                                        Icon(Icons.width_wide),
-                                                  ),
-                                                  Text("Content Width"),
-                                                ],
-                                              ),
-                                              Container(
-                                                decoration: const BoxDecoration(
-                                                    color: Color.fromARGB(
-                                                        28, 253, 253, 253),
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(
-                                                                10))),
-                                                child: Row(
-                                                  children: [
-                                                    CupertinoButton(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              0),
-                                                      child: const Icon(
-                                                        Icons.remove,
-                                                        color: Colors.white,
-                                                      ),
-                                                      onPressed: () => {
-                                                        setState(
-                                                          () {
-                                                            contentWidth += 5;
-                                                          },
-                                                        ),
-                                                      },
-                                                    ),
-                                                    CupertinoButton(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              0),
-                                                      child: const Icon(
-                                                        Icons.add,
-                                                        color: Colors.white,
-                                                      ),
-                                                      onPressed: () => {
-                                                        setState(
-                                                          () {
-                                                            if (contentWidth >=
-                                                                5) {
-                                                              contentWidth -= 5;
-                                                            }
-                                                          },
-                                                        ),
-                                                      },
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    CupertinoFormSection(
-                                      header: const Text("FONTS"),
-                                      children: [
-                                        ...List.generate(
-                                          fonts.length,
-                                          (index) => Container(
-                                            alignment: Alignment.centerLeft,
-                                            padding: const EdgeInsets.all(20),
-                                            child: GestureDetector(
-                                              onTap: () => setState(
-                                                () {
-                                                  fontFamily = fonts[index];
-                                                },
-                                              ),
-                                              child: Text(
-                                                fonts[index],
-                                                style: TextStyle(
-                                                  fontFamily: fonts[index],
-                                                  fontSize: articleTextSize,
-                                                ),
-                                              ),
+                                      Container(
+                                        width: double.infinity,
+                                        padding:
+                                            const EdgeInsets.only(bottom: 10),
+                                        child: RichText(
+                                          textAlign: TextAlign.left,
+                                          text: TextSpan(
+                                            text: article.originTitle,
+                                            style: TextStyle(
+                                              fontSize: themeProvider
+                                                  .fontSettings.articleFontSize,
+                                              fontFamily: themeProvider
+                                                  .fontSettings.articleFont,
+                                              fontVariations: const [
+                                                FontVariation('wght', 600)
+                                              ],
+                                              color: Color(themeProvider
+                                                  .theme.primaryColor),
                                             ),
+                                            children: <TextSpan>[
+                                              const TextSpan(
+                                                text: '・',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text: article.author,
+                                                style: TextStyle(
+                                                  fontSize: themeProvider
+                                                      .fontSettings
+                                                      .articleFontSize,
+                                                  fontFamily: themeProvider
+                                                      .fontSettings.articleFont,
+                                                  fontVariations: const [
+                                                    FontVariation('wght', 300)
+                                                  ],
+                                                  color: Color(themeProvider
+                                                      .theme.textColor),
+                                                ),
+                                              ),
+                                              const TextSpan(
+                                                text: '・',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text:
+                                                    timeAgo(article.published),
+                                                style: TextStyle(
+                                                  fontSize: themeProvider
+                                                      .fontSettings
+                                                      .articleFontSize,
+                                                  fontFamily: themeProvider
+                                                      .fontSettings.articleFont,
+                                                  fontVariations: const [
+                                                    FontVariation('wght', 300)
+                                                  ],
+                                                  color: Color(themeProvider
+                                                      .theme.textColor),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    ElevatedButton(
-                                      child: const Text('Close'),
-                                      onPressed: () => Navigator.pop(context),
-                                    ),
-                                  ],
+                                      ),
+                                      SelectableText.rich(
+                                        textSpan,
+                                        textAlign: themeProvider
+                                            .fontSettings.articleAlignment,
+                                        style: TextStyle(
+                                            height: themeProvider.fontSettings
+                                                .articleLineSpacing, //line spacing
+                                            letterSpacing: 0, //letter spacing
+                                            fontSize: themeProvider.fontSettings.articleFontSize,
+                                            fontFamily: themeProvider.fontSettings.articleFont,
+                                            color: Color(themeProvider.theme.textColor),
+                                            fontVariations: const [
+                                              FontVariation('wght', 400)
+                                            ]),
+                                      ),
+                                      const SizedBox(height: 80),
+                                      // HtmlWidget(
+                                      //   widget.article.summaryContent,
+                                      //   enableCaching: true,
+                                      //   customWidgetBuilder: (element) {
+                                      //     if (element.localName == 'p') {
+                                      //       return SelectableText.rich(
+                                      //         _parseHtmlToTextSpan(element),
+                                      //         style: TextStyle(fontSize: 16.0),
+                                      //       );
+                                      //     }
+                                      //     if (element.localName == 'img') {
+                                      //       final src = element.attributes['src'];
+                                      //       if (src != null) {
+                                      //         return Image.network(src);
+                                      //       }
+                                      //     }
+                                      //     return null;
+                                      //   },
+                                      //   renderMode: RenderMode.column,
+                                      //   textStyle: TextStyle(fontSize: 14),
+                                      //   customStylesBuilder: (element) {
+                                      //     if (element.attributes.containsKey("href")) {
+                                      //       return {
+                                      //         'color': "0xFF4C02E8",
+                                      //         'font-weight': "bold",
+                                      //         "text-decoration-line": "none"
+                                      //       };
+                                      //     }
+
+                                      //     return null;
+                                      //   },
+                                      // ),
+                                    ],
+                                  ),
                                 ),
-                              );
-                            },
-                          );
-                        },
-                      )
-                    },
-                    icon: const Icon(CupertinoIcons.textformat),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.decelerate,
-          bottom: isPopupImageVisible ? 0 : -screenHeight,
-          left: 0,
-          // child: GestureDetector(
-          //   onTap: () => {
-          //     setState(() {
-          //       isPopupImageVisible = false;
-          //     }),
-          //   },
-          child: Container(
-            width: screenWidth,
-            height: screenHeight,
-            color: Color.fromARGB(118, 0, 0, 0),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                  sigmaX: isPopupImageVisible ? 5 : 0,
-                  sigmaY: isPopupImageVisible ? 5 : 0),
-              child: SafeArea(
-                child: Stack(
-                  alignment: Alignment.center,
-                  // mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Center(, child:
-                    InteractiveViewer(
-                      trackpadScrollCausesScale: true,
-                      clipBehavior: Clip.none,
-                      minScale: 0.1,
-                      maxScale: 4,
-                      child: _showImage(popupImageSrc, popupImageCaption),
-                    ),
-                    // ),
-                    Positioned(
-                      bottom: 40,
-                      child: Container(
-                        color: Color.fromARGB(148, 0, 0, 0),
-                        width: screenWidth,
-                        alignment: Alignment.center,
-                        padding: EdgeInsets.all(20),
-                        child: Text(
-                          popupImageCaption,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontFamily: fontFamily,
-                              fontVariations: [FontVariation('wght', 500)]),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 100,
-                      right: 0,
-                      child: Container(
-                        alignment: Alignment.topRight,
-                        padding: EdgeInsets.all(20),
-                        child: CupertinoButton(
-                          child: Icon(
-                            Icons.close,
+                              ),
+                            ),
+                          )
+                        : CustomWebView(
+                            theme: themeProvider.theme,
+                            url: article.canonical,
                           ),
-                          borderRadius: BorderRadius.circular(100),
-                          color: Color.fromARGB(104, 62, 62, 62),
-                          padding: EdgeInsets.all(10),
-                          onPressed: () {
-                            setState(() {
-                              isPopupImageVisible = false;
-                            });
-                          },
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.decelerate,
+                      bottom: isPopupImageVisible ? 0 : -screenHeight,
+                      left: 0,
+                      child: Container(
+                        width: screenWidth,
+                        height: screenHeight,
+                        color: const Color.fromARGB(118, 0, 0, 0),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(
+                              sigmaX: isPopupImageVisible ? 5 : 0,
+                              sigmaY: isPopupImageVisible ? 5 : 0),
+                          child: SafeArea(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                InteractiveViewer(
+                                  trackpadScrollCausesScale: true,
+                                  clipBehavior: Clip.none,
+                                  minScale: 0.1,
+                                  maxScale: 4,
+                                  child: _showImage(
+                                      popupImageSrc, popupImageCaption),
+                                ),
+                                Positioned(
+                                  bottom: 40,
+                                  child: Container(
+                                    color: const Color.fromARGB(148, 0, 0, 0),
+                                    width: screenWidth,
+                                    alignment: Alignment.center,
+                                    padding: const EdgeInsets.all(20),
+                                    child: Text(
+                                      popupImageCaption,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontFamily: themeProvider
+                                              .fontSettings.articleFont,
+                                          fontVariations: const [
+                                            FontVariation('wght', 500)
+                                          ]),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 100,
+                                  right: 0,
+                                  child: Container(
+                                    alignment: Alignment.topRight,
+                                    padding: const EdgeInsets.all(20),
+                                    child: CupertinoButton(
+                                      borderRadius: BorderRadius.circular(100),
+                                      color:
+                                          const Color.fromARGB(104, 62, 62, 62),
+                                      padding: const EdgeInsets.all(10),
+                                      onPressed: () {
+                                        setState(() {
+                                          isPopupImageVisible = false;
+                                        });
+                                      },
+                                      child: const Icon(
+                                        Icons.close,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
+                      // ),
+                    ),
+                    ActionBar(
+                      article: article,
+                      databaseService: widget.databaseService,
+                      api: widget.api,
+                      themeProvider: themeProvider,
+                      pageController: pageController,
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-          // ),
-        ),
-      ],
-    );
+              );
+            }),
+      );
+    });
+    // pageController.animateToPage(widget.articleIndex,
+    //     curve: Curves.bounceIn, duration: Durations.long2);
+    // return pv;
+  }
+
+  Future<void> _markArticleAsRead(int articleId, int serverId) async {
+    // setState(() {});
+    try {
+      //Getting Server list
+      await widget.databaseService.deleteUnreadId(articleId);
+      Server server = await widget.databaseService.server(serverId);
+      await widget.api.markAsRead(server.baseUrl, server.auth, articleId);
+    } on Exception {
+      // Handle error
+    } finally {
+      // setState(() {});
+    }
   }
 
   TextSpan _parseHtmlToTextSpan(dom.Element element, AppTheme theme) {
@@ -824,8 +476,7 @@ class _ArticleViewState extends State<ArticleView> {
             ));
             for (var element in node.children) {
               if (element.localName == "span" && element.text != node.text) {
-                children
-                    .addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
+                children.addAll(_parseHtmlToTextSpan(node, theme).children!);
               }
             }
           // _parseHtmlToTextSpan(node).children!.any((x)=>x.=="img");
@@ -841,23 +492,45 @@ class _ArticleViewState extends State<ArticleView> {
                 ),
               );
             }
-            children.add(const TextSpan(text: '\n'));
+            if (children.isEmpty ||
+                children.last is TextSpan &&
+                    !(children.last as TextSpan).text!.endsWith('\n')) {
+              children.add(const TextSpan(text: '\n'));
+            }
+            break;
           case 'br':
-            children.add(const TextSpan(text: '\n'));
+            if (children.isEmpty ||
+                children.last is TextSpan &&
+                    !(children.last as TextSpan).text!.endsWith('\n')) {
+              children.add(const TextSpan(text: '\n'));
+            }
             break;
           case 'p':
-            children.add(const TextSpan(text: '\n'));
-            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
-            children.add(const TextSpan(text: '\n'));
+            if (children.isEmpty ||
+                children.last is TextSpan &&
+                    !(children.last as TextSpan).text!.endsWith('\n')) {
+              children.add(const TextSpan(text: '\n'));
+            }
+            children.addAll(_parseHtmlToTextSpan(node, theme).children!);
+            if (children.isEmpty ||
+                children.last is TextSpan &&
+                    !(children.last as TextSpan).text!.endsWith('\n')) {
+              children.add(const TextSpan(text: '\n'));
+            }
             break;
           case 'span':
-            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
+            children.addAll(_parseHtmlToTextSpan(node, theme).children!);
+            if (children.isEmpty ||
+                children.last is TextSpan &&
+                    !(children.last as TextSpan).text!.endsWith('\n')) {
+              children.add(const TextSpan(text: '\n'));
+            }
             break;
           case 'div':
-            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
+            children.addAll(_parseHtmlToTextSpan(node, theme).children!);
             break;
           case 'figure':
-            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
+            children.addAll(_parseHtmlToTextSpan(node, theme).children!);
             break;
           case 'figcaption':
             children.add(
@@ -873,7 +546,7 @@ class _ArticleViewState extends State<ArticleView> {
               style: const TextStyle(fontWeight: FontWeight.normal),
             ));
           default:
-            children.addAll(_parseHtmlToTextSpan(node, widget.theme).children!);
+            children.addAll(_parseHtmlToTextSpan(node, theme).children!);
           // if (src.startsWith('data:image/')) {
           //   // Handle Base64 image
           //   final base64Data = src.split(',').last;
@@ -891,7 +564,6 @@ class _ArticleViewState extends State<ArticleView> {
           //     WidgetSpan(
           //       child: GestureDetector(
           //         onTap: () async {
-          //           //TODO
           //         },
           //         onLongPress: () async {
           //           _showMenu(
@@ -921,7 +593,7 @@ class _ArticleViewState extends State<ArticleView> {
       // Handle Base64 image
       // final base64Data = src.split(',').last;
       // final imageBytes = base64Decode(base64Data);
-      return SizedBox();
+      return const SizedBox();
       // return GestureDetector(
       //   onLongPress: () async {
       //     //TODO
