@@ -1,9 +1,9 @@
-name: Build Flutter APK
+name: Create Android Release
 
 on:
   push:
-    branches:
-      - main # Specify the branch to trigger the workflow
+    tags:
+      - "v*" # Specify the branch to trigger the workflow
 
 jobs:
   build:
@@ -24,8 +24,30 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK to Artifacts
-        uses: actions/upload-artifact@v3
+      # - name: Upload APK to Artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release-apk
+      #     path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            Automated release for ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/app/outputs/flutter-apk/app-release.apk
+          asset_name: feederr.apk
+          asset_content_type: application/vnd.android.package-archive
