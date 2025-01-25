@@ -2,9 +2,8 @@ name: Create Android Release
 
 on:
   push:
-    branches:
-      - main # Specify the branch to trigger the workflow
-
+    tags:
+      - 'v*'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,6 +31,6 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v2
-        # if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
