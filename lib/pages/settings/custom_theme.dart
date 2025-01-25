@@ -1,5 +1,5 @@
 import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/utils/themeprovider.dart';
+import 'package:feederr/utils/providers/themeprovider.dart';
 import 'package:feederr/widgets/theme_preview.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class CustomThemeSettings extends StatefulWidget {
-  const CustomThemeSettings({super.key});
+  const CustomThemeSettings({
+    super.key,
+  });
+
   @override
   CustomThemeSettingsState createState() => CustomThemeSettingsState();
 }
@@ -36,7 +39,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+    return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
       return ListView(
         scrollDirection: Axis.vertical,
         children: <Widget>[
@@ -88,12 +91,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    themeProvider.updateSetting('primaryColor', 0xFFFF2B3A);
-                    // MyApp.updateTheme(context);
-                    // themeProvider.theme.primaryColor = 0xFFFF2B3A;
-                    // setState(
-                    //   () => themeProvider.theme.primaryColor = 0xFFFF2B3A,
-                    // );
+                    themeProvider.updateTheme('primaryColor', 0xFFFF2B3A);
                   },
                   child: Stack(
                     children: [
@@ -109,9 +107,12 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                         margin: const EdgeInsets.all(5),
                       ),
                       themeProvider.theme.primaryColor == 0xFFFF2B3A
-                          ? const Center(
+                          ? Center(
                               widthFactor: 1.5,
-                              child: Icon(Icons.check, size: 30),
+                              child: const Icon(
+                                Icons.check,
+                                size: 30,
+                              ),
                             )
                           : Container(),
                     ],
@@ -119,12 +120,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    // setState(
-                    //   () =>
-                    // );
-                    themeProvider.updateSetting('primaryColor', 0xff4bf4d9);
-                    // themeProvider.theme.primaryColor = 0xff4bf4d9;
-                    // MyApp.updateTheme(context);
+                    themeProvider.updateTheme('primaryColor', 0xff4bf4d9);
                   },
                   child: Stack(
                     children: [
@@ -150,12 +146,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    // setState(
-                    // () =>
-                    // themeProvider.theme.primaryColor = 0xff0404d9;
-                    // );
-                    themeProvider.updateSetting('primaryColor', 0xff0404d9);
-                    // MyApp.updateTheme(context);
+                    themeProvider.updateTheme('primaryColor', 0xff0404d9);
                   },
                   child: Stack(
                     children: [
@@ -189,11 +180,11 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                       ),
                       margin: const EdgeInsets.all(5),
                       child: ColorIndicator(
-                          // key:
                           width: 40,
                           height: 40,
                           borderRadius: 40,
                           color: Color(themeProvider.theme.primaryColor),
+                          // color: Colors.transparent,
                           elevation: 0,
                           onSelectFocus: false,
                           onSelect: () async {
@@ -232,13 +223,8 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               constraints: const BoxConstraints(
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
-                            // themeProvider.theme.primaryColor = newColor.value;
-                            // setState(() {
-                            //   themeProvider.theme
-                            // });
-                            themeProvider.updateSetting(
-                                'primaryColor', newColor.value);
-                            // MyApp.updateTheme(context);
+                            themeProvider.updateTheme(
+                                'primaryColor', newColor.value32bit);
                           }),
                     ),
                     IgnorePointer(
@@ -278,7 +264,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    themeProvider.updateSetting('surfaceColor', 0xFFFFFFFF);
+                    themeProvider.updateTheme('surfaceColor', 0xFFFFFFFF);
                     // MyApp.updateTheme(context);
                     // themeProvider.theme.surfaceColor = 0xFFFF2B3A;
                     // setState(
@@ -316,7 +302,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     // setState(
                     //   () =>
                     // );
-                    themeProvider.updateSetting('surfaceColor', 0xff1f1f1f);
+                    themeProvider.updateTheme('surfaceColor', 0xff1f1f1f);
                     // themeProvider.theme.surfaceColor = 0xff4bf4d9;
                     // MyApp.updateTheme(context);
                   },
@@ -352,7 +338,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     // () =>
                     // themeProvider.theme.surfaceColor = 0xff0404d9;
                     // );
-                    themeProvider.updateSetting('surfaceColor', 0xff000000);
+                    themeProvider.updateTheme('surfaceColor', 0xff000000);
                     // MyApp.updateTheme(context);
                   },
                   child: Stack(
@@ -435,7 +421,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
                             // themeProvider.theme.surfaceColor = newColor.value;
-                            themeProvider.updateSetting(
+                            themeProvider.updateTheme(
                                 'surfaceColor', newColor.value);
                             // MyApp.updateTheme(context);
                           }),
@@ -477,7 +463,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    themeProvider.updateSetting('textColor', 0xFFFFFFFF);
+                    themeProvider.updateTheme('textColor', 0xFFFFFFFF);
                   },
                   child: Stack(
                     children: [
@@ -512,7 +498,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     // () =>
                     // themeProvider.theme.textColor = 0xff0404d9;
                     // );
-                    themeProvider.updateSetting('textColor', 0xff000000);
+                    themeProvider.updateTheme('textColor', 0xff000000);
                     // MyApp.updateTheme(context);
                   },
                   child: Stack(
@@ -542,7 +528,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     // setState(
                     //   () =>
                     // );
-                    themeProvider.updateSetting('textColor', 0xff4bf4d9);
+                    themeProvider.updateTheme('textColor', 0xff4bf4d9);
                     // themeProvider.theme.textColor = 0xff4bf4d9;
                     // MyApp.updateTheme(context);
                   },
@@ -622,7 +608,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
                             // themeProvider.theme.textColor = newColor.value;
-                            themeProvider.updateSetting(
+                            themeProvider.updateTheme(
                                 'textColor', newColor.value);
                             // MyApp.updateTheme(context);
                           }),
@@ -664,7 +650,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    themeProvider.updateSetting('secondaryColor', 0xFFFF2B3A);
+                    themeProvider.updateTheme('secondaryColor', 0xFFFF2B3A);
                     // MyApp.updateTheme(context);
                     // themeProvider.theme.secondaryColor = 0xFFFF2B3A;
                     // setState(
@@ -698,7 +684,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     // setState(
                     //   () =>
                     // );
-                    themeProvider.updateSetting('secondaryColor', 0xff4bf4d9);
+                    themeProvider.updateTheme('secondaryColor', 0xff4bf4d9);
                     // themeProvider.theme.secondaryColor = 0xff4bf4d9;
                     // MyApp.updateTheme(context);
                   },
@@ -730,7 +716,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     // () =>
                     // themeProvider.theme.secondaryColor = 0xff0404d9;
                     // );
-                    themeProvider.updateSetting('secondaryColor', 0xff0404d9);
+                    themeProvider.updateTheme('secondaryColor', 0xff0404d9);
                     // MyApp.updateTheme(context);
                   },
                   child: Stack(
@@ -809,7 +795,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
                             // themeProvider.theme.secondaryColor = newColor.value;
-                            themeProvider.updateSetting(
+                            themeProvider.updateTheme(
                                 'secondaryColor', newColor.value);
                             // MyApp.updateTheme(context);
                           }),
@@ -830,9 +816,31 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
               ],
             ),
           ),
-          // child: ColorPicker(onColorChanged: (color) {
-          //   themeProvider.updateSetting('secondaryColor', color.value32bit);
-          // })),
+          // MergeSemantics(
+          //   child: CupertinoListTile(
+          //     title: const Text('Lights'),
+          //     trailing: CupertinoSwitch(
+          //       value: themeProvider.theme.isDark,
+          //       onChanged: (bool value) {
+          //         themeProvider.updateSetting('isDarkMode', value);
+          //       },
+          //     ),
+          //     // onTap: () { setState(() { _lights = !_lights; }); },
+          //   ),
+          // ),
+          ListTile(
+            leading: const Icon(CupertinoIcons.sun_haze),
+            iconColor: Color(themeProvider.theme.textColor),
+            textColor: Color(themeProvider.theme.textColor),
+            title: const Text('Dark Mode'),
+            trailing: Switch(
+                value: themeProvider.theme.isDark,
+                onChanged: (v) {
+                  themeProvider.updateTheme('isDarkMode', v);
+                }),
+          ),
+
+          // SegmentedButton(segments: segments, selected: selected)
         ],
       );
     });

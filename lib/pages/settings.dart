@@ -1,14 +1,13 @@
 import 'dart:ui';
 
-import 'package:feederr/models/font_settings.dart';
 import 'package:feederr/pages/add_server.dart';
+import 'package:feederr/pages/settings/ai.dart';
 import 'package:feederr/pages/settings/appearance.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/themeprovider.dart';
+import 'package:feederr/utils/providers/themeprovider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:feederr/models/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -29,7 +28,7 @@ class SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
     //TODO: Settings
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+    return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
       return ListView(
         scrollDirection: Axis.vertical,
         children: <Widget>[
@@ -135,6 +134,50 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
+            leading: const Icon(CupertinoIcons.sparkles),
+            title: const Text('AI Summarization Settings'),
+            trailing: const Icon(CupertinoIcons.right_chevron),
+            iconColor: Color(themeProvider.theme.textColor),
+            textColor: Color(themeProvider.theme.textColor),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return Scaffold(
+                      // extendBodyBehindAppBar: true,
+                      appBar: AppBar(
+                        backgroundColor: Color(themeProvider.theme.surfaceColor)
+                            .withAlpha(56),
+                        elevation: 0,
+                        title: Text(
+                          'Summarization ',
+                          style: TextStyle(
+                            color: Color(themeProvider.theme.textColor),
+                          ),
+                          overflow: TextOverflow.fade,
+                        ),
+                        flexibleSpace: ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: 36,
+                              sigmaY: 36,
+                            ),
+                            child: Container(
+                              color: Colors.transparent,
+                            ),
+                          ),
+                        ),
+                      ),
+                      body: AISettings(),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(CupertinoIcons.list_dash),
             title: const Text('List Styles'),
             trailing: const Icon(CupertinoIcons.right_chevron),
@@ -156,7 +199,7 @@ class SettingsState extends State<Settings> {
           ),
         ],
       );
+      // return Text("dataaaa");
     });
-    // return Text("dataaaa");
   }
 }

@@ -1,11 +1,10 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/themeprovider.dart';
+import 'package:feederr/utils/providers/fontprovider.dart';
+import 'package:feederr/utils/providers/themeprovider.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -49,8 +48,8 @@ class _ArticlePreViewState extends State<ArticlePreView> {
     var screenWidth = MediaQuery.sizeOf(context).width;
     var screenHeight = MediaQuery.sizeOf(context).height;
     Article article = widget.article;
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
-      final document = html_parser.parse(article.summaryContent);
+    final document = html_parser.parse(article.summaryContent);
+    return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
       final textSpan =
           _parseHtmlToTextSpan(document.body!, themeProvider.theme);
       return SizedBox(
@@ -60,97 +59,99 @@ class _ArticlePreViewState extends State<ArticlePreView> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             color: Color(themeProvider.theme.surfaceColor),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                  horizontal: themeProvider.fontSettings.articleContentWidth),
-              child: Column(
-                children: [
-                  Container(
-                    width: screenWidth,
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: SelectableText(
-                      article.title,
-                      textAlign: themeProvider.fontSettings.titleAlignment,
-                      style: TextStyle(
-                        fontSize: themeProvider.fontSettings.titleFontSize,
-                        fontFamily: themeProvider.fontSettings.articleFont,
-                        fontVariations: const [FontVariation('wght', 600)],
-                        color: Color(themeProvider.theme.textColor),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: screenWidth,
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: RichText(
-                      textAlign: TextAlign.left,
-                      text: TextSpan(
-                        text: article.originTitle,
+            child: Consumer<FontProvider>(builder: (_, fontProvider, __) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                    horizontal: fontProvider.fontSettings.articleContentWidth),
+                child: Column(
+                  children: [
+                    Container(
+                      width: screenWidth,
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SelectableText(
+                        article.title,
+                        textAlign: fontProvider.fontSettings.titleAlignment,
                         style: TextStyle(
-                          fontSize: themeProvider.fontSettings.articleFontSize,
-                          fontFamily: themeProvider.fontSettings.articleFont,
+                          fontSize: fontProvider.fontSettings.titleFontSize,
+                          fontFamily: fontProvider.fontSettings.articleFont,
                           fontVariations: const [FontVariation('wght', 600)],
-                          color: Color(themeProvider.theme.primaryColor),
+                          color: Color(themeProvider.theme.textColor),
                         ),
-                        children: <TextSpan>[
-                          const TextSpan(
-                            text: '・',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: article.author,
-                            style: TextStyle(
-                              fontSize:
-                                  themeProvider.fontSettings.articleFontSize,
-                              fontFamily:
-                                  themeProvider.fontSettings.articleFont,
-                              fontVariations: const [
-                                FontVariation('wght', 300)
-                              ],
-                              color: Color(themeProvider.theme.textColor),
-                            ),
-                          ),
-                          const TextSpan(
-                            text: '・',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: timeAgo(article.published),
-                            style: TextStyle(
-                              fontSize:
-                                  themeProvider.fontSettings.articleFontSize,
-                              fontFamily:
-                                  themeProvider.fontSettings.articleFont,
-                              fontVariations: const [
-                                FontVariation('wght', 300)
-                              ],
-                              color: Color(themeProvider.theme.textColor),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-                  ),
-                  SelectableText.rich(
-                    textSpan,
-                    textAlign: themeProvider.fontSettings.articleAlignment,
-                    style: TextStyle(
-                        height: themeProvider
-                            .fontSettings.articleLineSpacing, //line spacing
-                        letterSpacing: 0, //letter spacing
-                        fontSize: themeProvider.fontSettings.articleFontSize,
-                        fontFamily: themeProvider.fontSettings.articleFont,
-                        color: Color(themeProvider.theme.textColor),
-                        fontVariations: const [FontVariation('wght', 400)]),
-                  ),
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
+                    Container(
+                      width: screenWidth,
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: RichText(
+                        textAlign: TextAlign.left,
+                        text: TextSpan(
+                          text: article.originTitle,
+                          style: TextStyle(
+                            fontSize: fontProvider.fontSettings.articleFontSize,
+                            fontFamily: fontProvider.fontSettings.articleFont,
+                            fontVariations: const [FontVariation('wght', 600)],
+                            color: Color(themeProvider.theme.primaryColor),
+                          ),
+                          children: <TextSpan>[
+                            const TextSpan(
+                              text: '・',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: article.author,
+                              style: TextStyle(
+                                fontSize:
+                                    fontProvider.fontSettings.articleFontSize,
+                                fontFamily:
+                                    fontProvider.fontSettings.articleFont,
+                                fontVariations: const [
+                                  FontVariation('wght', 300)
+                                ],
+                                color: Color(themeProvider.theme.textColor),
+                              ),
+                            ),
+                            const TextSpan(
+                              text: '・',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: timeAgo(article.published),
+                              style: TextStyle(
+                                fontSize:
+                                    fontProvider.fontSettings.articleFontSize,
+                                fontFamily:
+                                    fontProvider.fontSettings.articleFont,
+                                fontVariations: const [
+                                  FontVariation('wght', 300)
+                                ],
+                                color: Color(themeProvider.theme.textColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SelectableText.rich(
+                      textSpan,
+                      textAlign: fontProvider.fontSettings.articleAlignment,
+                      style: TextStyle(
+                          height: fontProvider
+                              .fontSettings.articleLineSpacing, //line spacing
+                          letterSpacing: 0, //letter spacing
+                          fontSize: fontProvider.fontSettings.articleFontSize,
+                          fontFamily: fontProvider.fontSettings.articleFont,
+                          color: Color(themeProvider.theme.textColor),
+                          fontVariations: const [FontVariation('wght', 400)]),
+                    ),
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              );
+            }),
           ),
         ),
       );

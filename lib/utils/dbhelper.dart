@@ -1,8 +1,11 @@
-import 'package:feederr/models/article_category.dart';
+import 'package:feederr/models/categories/article_category.dart';
 import 'package:feederr/models/category.dart';
-import 'package:feederr/models/feed_category.dart';
-import 'package:feederr/models/categoryentry.dart';
+import 'package:feederr/models/categories/feed_category.dart';
+import 'package:feederr/models/categories/categoryentry.dart';
 import 'package:feederr/models/feedentry.dart';
+import 'package:feederr/models/local_feeds/local_article.dart';
+import 'package:feederr/models/local_feeds/local_feed.dart';
+import 'package:feederr/models/local_feeds/rss_feeds.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/models/unread.dart';
@@ -39,7 +42,8 @@ class DatabaseService {
     return await openDatabase(
       path,
       onCreate: _onCreate,
-      version: 1,
+      onUpgrade: _onUpgrade,
+      version: 4,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
@@ -74,9 +78,76 @@ class DatabaseService {
     await db.execute(
       'CREATE TABLE tag_list(id2 INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT, type TEXT, count INTEGER, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
     );
-    // await db.execute(
-    //   'CREATE TABLE tagged_ids(articleId INTEGER PRIMARY KEY, serverId INTEGER, tag INTEGER, FOREIGN KEY (serverId) REFERENCES server_list(id) ON DELETE CASCADE)',
-    // );
+    await db.execute(
+      'CREATE TABLE rss_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT)',
+    );
+    await db.execute(
+      'CREATE TABLE local_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER)',
+    );
+    await db.execute(
+      'CREATE TABLE local_articles(id TEXT, id2 INTEGER PRIMARY KEY AUTOINCREMENT, crawlTimeMsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES local_feeds(id) ON DELETE CASCADE)',
+    );
+
+// Insert a "local" server record when the database is created
+    await db.insert(
+      'server_list',
+      {
+        'id': 0,
+        'baseUrl': 'localhost',
+        'userName': '',
+        'password': '',
+        'auth': '',
+      },
+      conflictAlgorithm: ConflictAlgorithm
+          .replace, // Optional: Handle conflicts (e.g., replacing if the same server is already in the list)
+    );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < newVersion) {
+      // Version 2 adds a new table
+      // Check if the table exists
+      var result = await db.rawQuery(
+          'SELECT name FROM sqlite_master WHERE type="table" AND name="rss_feeds"');
+
+      if (result.isEmpty) {
+        // Table doesn't exist, create it
+        await db.execute(
+          'CREATE TABLE rss_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT)',
+        );
+      }
+      var result2 = await db.rawQuery(
+          'SELECT name FROM sqlite_master WHERE type="table" AND name="local_feeds"');
+
+      if (result2.isEmpty) {
+        // Table doesn't exist, create it
+        await db.execute(
+          'CREATE TABLE local_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER)',
+        );
+      }
+      var result3 = await db.rawQuery(
+          'SELECT name FROM sqlite_master WHERE type="table" AND name="local_articles"');
+
+      if (result3.isEmpty) {
+        await db.execute(
+          'CREATE TABLE local_articles(id TEXT, id2 INTEGER PRIMARY KEY AUTOINCREMENT, crawlTimeMsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES local_feeds(id) ON DELETE CASCADE)',
+        );
+      }
+// Insert a "local" server record when the database is created
+      await db.insert(
+        'server_list',
+        {
+          'baseUrl': 'localhost', // Example base URL for local server
+          'userName': '', // Example username
+          'password': '', // Example password
+          'auth': '', // Example authentication type
+        },
+        conflictAlgorithm: ConflictAlgorithm
+            .replace, // Optional: Handle conflicts (e.g., replacing if the same server is already in the list)
+      );
+    }
+
+    // You can add more version checks and migrations here if necessary
   }
 
   // Define a function that inserts articles into the database
@@ -130,15 +201,141 @@ class DatabaseService {
     );
   }
 
-  // A method that retrieves all the articles from the articles table.
-  Future<List<Article>> articles() async {
-    // Get a reference to the database.
+  Future<void> insertRssFeed(RssFeedUrl rssFeed) async {
+    final db = await _databaseService.database;
+    await db.insert(
+      'rss_feeds',
+      rssFeed.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<int> insertLocalFeed(LocalFeed feed) async {
+    final db = await _databaseService.database;
+    return await db.insert('local_feeds', feed.toMap());
+  }
+
+  Future<List<RssFeedUrl>> rssFeeds() async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query('rss_feeds');
+    return List.generate(
+        maps.length, (index) => RssFeedUrl.fromMap(maps[index]));
+  }
+
+  Future<List<LocalFeed>> localFeeds() async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query('local_feeds');
+    return List.generate(
+        maps.length, (index) => LocalFeed.fromMap(maps[index]));
+  }
+
+  Future<LocalFeed?> localFeedByUrl(String url) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('local_feeds', where: 'url = ?', whereArgs: [url]);
+    if (maps.isNotEmpty) {
+      return LocalFeed.fromDBMap(maps[0]);
+    } else {
+      return null;
+    }
+  }
+
+  Future<List<LocalArticle>> localArticles() async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query('local_articles');
+    return List.generate(
+        maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
+  }
+
+  Future<List<LocalArticle>> localArticlesByLocalFeed(
+      LocalFeed localFeed) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query('local_articles',
+        where: 'serverId = ?', whereArgs: [localFeed.id]);
+
+    List<LocalArticle> liArticles = List.generate(
+        maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
+    List<UnreadId> liUnreadId = await unreadIds();
+    List<StarredId> liStarredId = await starredIds();
+    final unreadIdSet = liUnreadId.map((unread) => unread.articleId).toSet();
+    final starredIdSet =
+        liStarredId.map((starred) => starred.articleId).toSet();
+    for (var article in liArticles) {
+      article.isRead = !unreadIdSet.contains(article.id2);
+      article.isStarred = starredIdSet.contains(article.id2);
+    }
+    return liArticles;
+  }
+
+  Future<List<LocalArticle>> localUnreadArticlesByLocalFeed(
+      LocalFeed localFeed) async {
     final db = await _databaseService.database;
 
-    // Query the table for all the articles.
+    // Define the SQL query to join unread_ids with local_articles based on serverId
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT l.*
+    FROM unread_ids u
+    JOIN local_articles l 
+    ON u.articleId = l.id2
+    WHERE u.serverId = ? AND l.serverId = ?
+  ''', [0, localFeed.id]);
+
+    List<LocalArticle> liArticles = List.generate(
+      maps.length,
+      (index) => LocalArticle.fromDBMap(maps[index]),
+    );
+
+    List<StarredId> liStarredId = await starredIds();
+    final starredIdSet =
+        liStarredId.map((starred) => starred.articleId).toSet();
+    for (var article in liArticles) {
+      article.isRead = false;
+      article.isStarred = starredIdSet.contains(article.id2);
+    }
+
+    // Return the list of LocalArticle objects by mapping the results
+    return liArticles;
+  }
+
+  Future<List<LocalArticle>> localStarredArticlesByLocalFeed(
+      LocalFeed localFeed) async {
+    final db = await _databaseService.database;
+
+    // Define the SQL query to join unread_ids with local_articles based on serverId
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT l.*
+    FROM starred_ids s
+    JOIN local_articles l 
+    ON s.articleId = l.id2
+    WHERE s.serverId = ? AND l.serverId = ?
+  ''', [0, localFeed.id]);
+
+    List<LocalArticle> liArticles = List.generate(
+        maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
+    List<UnreadId> liUnreadId = await unreadIds();
+    final unreadIdSet = liUnreadId.map((unread) => unread.articleId).toSet();
+    for (var article in liArticles) {
+      article.isRead = !unreadIdSet.contains(article.id2);
+      article.isStarred = true;
+    }
+    return liArticles;
+  }
+
+  Future<int> insertLocalArticle(LocalArticle article) async {
+    final db = await _databaseService.database;
+
+    return await db.insert(
+      'local_articles',
+      article.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Article>> articles() async {
+    final db = await _databaseService.database;
+
     final List<Map<String, dynamic>> maps = await db.query('articles');
 
-    // Convert the List<Map<String, dynamic> into a List<Article>.
     return List.generate(
         maps.length, (index) => Article.fromDBMap(maps[index]));
   }
@@ -197,6 +394,17 @@ class DatabaseService {
         await db.query('articles', where: 'id2 = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Article.fromDBMap(maps[0]);
+    } else {
+      return null;
+    }
+  }
+
+  Future<LocalArticle?> localArticle(String id) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('local_articles', where: 'id = ?', whereArgs: [id]);
+    if (maps.isNotEmpty) {
+      return LocalArticle.fromDBMap(maps[0]);
     } else {
       return null;
     }
@@ -578,26 +786,16 @@ class DatabaseService {
       final articles =
           articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-      List<UnreadId>? liUnreadIds = await unreadIds();
-      List<StarredId>? liStarredIds = await starredIds();
-      for (Article article in articles) {
-        article.isStarred = true;
-        article.isRead = false;
+      List<UnreadId> liUnreadIds = await unreadIds();
+      List<StarredId> liStarredIds = await starredIds();
+      final unreadIdSet = liUnreadIds.map((unread) => unread.articleId).toSet();
+      final starredIdSet =
+          liStarredIds.map((starred) => starred.articleId).toSet();
 
-        if (liUnreadIds
-            .where((element) => element.articleId == article.id2)
-            .isNotEmpty) {
-          article.isRead = false;
-        } else {
-          article.isRead = true;
-        }
-        if (liStarredIds
-            .where((element) => element.articleId == article.id2)
-            .isNotEmpty) {
-          article.isStarred = true;
-        } else {
-          article.isStarred = false;
-        }
+      // Use a for loop to update isRead
+      for (var article in articles) {
+        article.isRead = !unreadIdSet.contains(article.id2);
+        article.isStarred = starredIdSet.contains(article.id2);
       }
       // Create the CategoryEntry
       categoryEntries.add(CategoryEntry(
@@ -655,18 +853,13 @@ class DatabaseService {
       final articles =
           articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-      List<UnreadId>? liUnreadIds = await unreadIds();
-      for (Article article in articles) {
-        article.isStarred = true;
-        article.isRead = false;
+      List<UnreadId> liUnreadIds = await unreadIds();
+      final unreadIdSet = liUnreadIds.map((unread) => unread.articleId).toSet();
 
-        if (liUnreadIds
-            .where((element) => element.articleId == article.id2)
-            .isNotEmpty) {
-          article.isRead = false;
-        } else {
-          article.isRead = true;
-        }
+      // Use a for loop to update isRead
+      for (var article in articles) {
+        article.isRead = !unreadIdSet.contains(article.id2);
+        article.isStarred = true;
       }
       // Create the CategoryEntry
       if (feedEntries.isNotEmpty) {
@@ -726,18 +919,14 @@ class DatabaseService {
       final articles =
           articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-      // List<UnreadId> liUnreadId = await unreadIds();
-      List<StarredId>? liStarredIds = await starredIds();
-      for (Article article in articles) {
+      List<StarredId> liStarredIds = await starredIds();
+      final starredIdSet =
+          liStarredIds.map((starred) => starred.articleId).toSet();
+
+      // Use a for loop to update isRead
+      for (var article in articles) {
         article.isRead = false;
-        // StarredId starred = ;
-        if (liStarredIds
-            .where((element) => element.articleId == article.id2)
-            .isNotEmpty) {
-          article.isStarred = true;
-        } else {
-          article.isStarred = false;
-        }
+        article.isStarred = starredIdSet.contains(article.id2);
       }
       // Create the CategoryEntry
       if (feedEntries.isNotEmpty) {

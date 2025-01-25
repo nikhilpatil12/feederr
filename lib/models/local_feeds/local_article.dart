@@ -1,45 +1,46 @@
 import 'dart:convert';
 
-class Article {
+import 'package:feederr/models/article.dart';
+
+class LocalArticle {
   final String? id;
   int? id2;
-  final String crawlTimeMsec;
-  final String timestampUsec;
   final int published;
+  final String crawlTimeMsec;
   final String title;
   final String canonical;
   final String alternate;
   final String categories;
-  final String originStreamId;
-  final String originHtmlUrl;
+  // final String originStreamId;
+  // final String originHtmlUrl;
   final String originTitle;
   final String summaryContent;
   final String author;
   String imageUrl;
   int serverId;
-  int feedId;
+  // int feedId;
   bool isRead;
   bool isStarred;
-  bool isLocal = false;
+  bool isLocal;
 
-  Article({
+  LocalArticle({
     required this.id,
     this.id2,
     required this.crawlTimeMsec,
-    required this.timestampUsec,
+    // required this.timestampUsec,
     required this.published,
     required this.title,
     required this.canonical,
     required this.alternate,
     required this.categories,
-    required this.originStreamId,
-    required this.originHtmlUrl,
+    // required this.originStreamId,
+    // required this.originHtmlUrl,
     required this.originTitle,
     required this.summaryContent,
     required this.author,
     required this.imageUrl,
     required this.serverId,
-    required this.feedId,
+    // required this.feedId,
     required this.isRead,
     required this.isStarred,
     required this.isLocal,
@@ -52,67 +53,55 @@ class Article {
       'id': id,
       'id2': id2,
       'crawlTimeMsec': crawlTimeMsec,
-      'timestampUsec': timestampUsec,
       'published': published,
       'title': title,
       'canonical': canonical,
       'alternate': alternate,
       'categories': categories,
-      'origin_streamId': originStreamId,
-      'origin_htmlUrl': originHtmlUrl,
-      'origin_title': originTitle,
       'summary_content': summaryContent,
+      'origin_title': originTitle,
       'author': author,
-      'imageUrl': imageUrl,
       'serverId': serverId,
-      'feedId': feedId,
+      'imageUrl': imageUrl,
     };
   }
 
-  factory Article.fromMap(Map<String, dynamic> map) {
-    return Article(
+  factory LocalArticle.fromMap(Map<String, dynamic> map) {
+    return LocalArticle(
       id: map['id'] ?? '',
       id2: map['id2'] ?? 0,
       crawlTimeMsec: map['crawlTimeMsec'] ?? '',
-      timestampUsec: map['timestampUsec'] ?? '',
       published: map['published'] ?? 0,
       title: map['title'] ?? '',
       canonical: map['canonical'][0]["href"] ?? '',
       alternate: map['alternate'][0]["href"] ?? '',
       categories: jsonEncode(map['categories']),
-      originStreamId: map['origin']['streamId'] ?? '',
-      originHtmlUrl: map['origin']['htmlUrl'] ?? '',
-      originTitle: map['origin']['title'] ?? '',
       summaryContent: map['summary']['content'] ?? '',
+      originTitle: map['origin_title'] ?? '',
       author: map['author'] ?? '',
-      imageUrl: map['imageUrl'] ?? '',
       serverId: map['serverId'] ?? 0,
-      feedId: map['feedId'] ?? 0,
-      isLocal: false,
+      imageUrl: map['imageUrl'] ?? '',
+      isLocal: true,
       isRead: map['isRead'] ?? false,
       isStarred: map['isStarred'] ?? false,
     );
   }
-  factory Article.fromDBMap(Map<String, dynamic> map) {
-    return Article(
+  factory LocalArticle.fromDBMap(Map<String, dynamic> map) {
+    return LocalArticle(
       id: map['id'] ?? '',
       id2: map['id2'] ?? 0,
       crawlTimeMsec: map['crawlTimeMsec'] ?? '',
-      timestampUsec: map['timestampUsec'] ?? '',
       published: map['published'] ?? 0,
       title: map['title'] ?? '',
       canonical: map['canonical'] ?? '',
       alternate: map['alternate'] ?? '',
       categories: map['categories'],
-      originStreamId: map['originStreamId'] ?? '',
-      originHtmlUrl: map['origin_htmlUrl'] ?? '',
-      originTitle: map['origin_title'] ?? '',
       summaryContent: map['summary_content'] ?? '',
+      originTitle: map['origin_title'] ?? '',
       author: map['author'] ?? '',
-      imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
       serverId: map['serverId'] ?? 0,
-      feedId: map['feedId'] ?? 0,
-      isLocal: false,
+      imageUrl: map['imageUrl'] ?? 'https://picsum.photos/250?image=9',
+      isLocal: true,
       isRead: false,
       isStarred: false,
     );
@@ -120,12 +109,43 @@ class Article {
 
   String toJson() => json.encode(toMap());
 
-  factory Article.fromJson(String source) =>
-      Article.fromMap(json.decode(source));
+  factory LocalArticle.fromJson(String source) =>
+      LocalArticle.fromMap(json.decode(source));
 
   // Implement toString to make it easier to see information about
   // each article when using the print statement.
   @override
   String toString() =>
-      'Article(id: $id, id2: $id2, crawlTimeMsec: $crawlTimeMsec, timestampUsec: $timestampUsec, published: $published, title: $title, canonical:$canonical, alternate:$alternate, categories:$categories, originStreamId: $originStreamId, originHtmlUrl: $originHtmlUrl, originTitle:$originTitle, summaryContent:$summaryContent, author:$author, imageUrl:$imageUrl, serverId:$serverId, feedId:$feedId)';
+      'Article(id: $id, id2: $id2,  crawlTimeMsec: $crawlTimeMsec,  published: $published, title: $title, canonical:$canonical, alternate:$alternate, categories:$categories, summaryContent:$summaryContent, author:$author, imageUrl:$imageUrl, originTitle:$originTitle, serverId:$serverId)';
+}
+
+extension LocalArticleExtension on LocalArticle {
+  Article toArticle() {
+    return Article(
+      id: id,
+      id2: id2, // Provide default or calculated value if necessary
+      crawlTimeMsec: crawlTimeMsec,
+      timestampUsec: "",
+      published: published,
+      title: title,
+      canonical: canonical,
+      alternate: alternate,
+      categories: categories,
+      originStreamId: "", // Default value
+      originHtmlUrl: "", // Default value
+      originTitle: originTitle, // Default value
+      summaryContent: summaryContent,
+      author: author,
+      imageUrl: imageUrl,
+      serverId: 0,
+      feedId: 0, // Default value
+      isRead: isRead,
+      isStarred: isStarred,
+      isLocal: true,
+    );
+  }
+}
+
+List<Article> convertLocalArticlesToArticles(List<LocalArticle> localArticles) {
+  return localArticles.map((localArticle) => localArticle.toArticle()).toList();
 }

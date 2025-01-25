@@ -1,14 +1,12 @@
-import 'package:flutter/cupertino.dart';
+import 'package:feederr/utils/providers/themeprovider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:feederr/models/app_theme.dart';
-import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class CustomWebView extends StatefulWidget {
-  const CustomWebView({super.key, required this.theme, required this.url});
-  final AppTheme theme;
+  const CustomWebView({super.key, required this.url});
   final String url;
   @override
   CustomWebViewState createState() => CustomWebViewState();
@@ -24,13 +22,18 @@ class CustomWebViewState extends State<CustomWebView> {
     super.initState();
     webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      // ..setBackgroundColor(
+      //   Color(widget.theme.surfaceColor),
+      // )
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
-            setState(() {
-              webProgress = progress / 100;
-              if (progress == 100) isLoaded = true;
-            });
+            if (mounted) {
+              setState(() {
+                webProgress = progress / 100;
+                if (progress == 100) isLoaded = true;
+              });
+            }
           },
           onPageStarted: (String url) {},
           onPageFinished: (String url) {},
@@ -61,10 +64,16 @@ class CustomWebViewState extends State<CustomWebView> {
             controller: webViewController,
           ),
           !isLoaded
-              ? LinearProgressIndicator(
-                  value: webProgress,
-                  color: Color(widget.theme.primaryColor),
-                  backgroundColor: Colors.transparent,
+              ? Selector<ThemeProvider, int>(
+                  selector: (_, themeProvider) =>
+                      themeProvider.theme.primaryColor,
+                  builder: (context, primaryColor, child) {
+                    return LinearProgressIndicator(
+                      value: webProgress,
+                      color: Color(primaryColor),
+                      backgroundColor: Colors.transparent,
+                    );
+                  },
                 )
               : Container(),
         ],

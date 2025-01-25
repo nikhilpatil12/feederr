@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,9 +8,12 @@ import 'package:feederr/models/article.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/themeprovider.dart';
+import 'package:feederr/utils/providers/apiprovider.dart';
+import 'package:feederr/utils/providers/fontprovider.dart';
+import 'package:feederr/utils/providers/themeprovider.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:feederr/widgets/actionbar.dart';
+import 'package:feederr/widgets/loading.dart';
 import 'package:feederr/widgets/webview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -18,11 +23,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 
-enum View { webview, articleview }
+enum ArticleViewElement { webview, articleview, summaryview }
 
-Map<View, Icon> views = <View, Icon>{
-  View.webview: const Icon(CupertinoIcons.globe),
-  View.articleview: const Icon(Icons.article),
+Set<ArticleViewElement> views = <ArticleViewElement>{
+  ArticleViewElement.webview,
+  ArticleViewElement.articleview,
+  ArticleViewElement.summaryview,
 };
 
 class ArticleView extends StatefulWidget {
@@ -49,7 +55,8 @@ class _ArticleViewState extends State<ArticleView> {
   bool isPopupImageVisible = false;
   String popupImageSrc = "";
   String popupImageCaption = "";
-  View selectedView = View.articleview;
+  ArticleViewElement selectedView = ArticleViewElement.articleview;
+
   @override
   void initState() {
     super.initState();
@@ -62,9 +69,13 @@ class _ArticleViewState extends State<ArticleView> {
     final PageController pageController =
         PageController(initialPage: widget.articleIndex);
     Article article = widget.articles[widget.articleIndex];
-    _markArticleAsRead(article.id2 ?? 0, article.serverId);
-    article.isRead = true;
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+    if (!article.isRead) {
+      _markArticleAsRead(article.id2 ?? 0, article.serverId, article.isLocal);
+      // widget.articles[widget.articleIndex].isRead = true;
+      article.isRead = true;
+    }
+    String apiKey = context.select((ApiProvider p) => p.openAiKey);
+    return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
       return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -82,20 +93,21 @@ class _ArticleViewState extends State<ArticleView> {
                 color: Colors.transparent,
                 child: SafeArea(
                   child: Center(
-                    child: CupertinoSlidingSegmentedControl<View>(
+                    child: CupertinoSlidingSegmentedControl<ArticleViewElement>(
                       // padding: EdgeInsets.all(8),
                       // unselectedColor:
                       //     Color(themeProvider.theme.surfaceColor),
                       // selectedColor: Color(themeProvider.theme.primaryColor),
                       backgroundColor: Color(themeProvider.theme.textColor)
-                          .withValues(alpha: 0.5),
+                          .withValues(alpha: 0.2),
                       thumbColor: Color(themeProvider.theme.primaryColor),
                       groupValue: selectedView,
-                      children: <View, Widget>{
-                        View.webview: Icon(CupertinoIcons.globe),
-                        View.articleview: Icon(Icons.article),
+                      children: <ArticleViewElement, Widget>{
+                        ArticleViewElement.webview: Icon(CupertinoIcons.globe),
+                        ArticleViewElement.articleview: Icon(Icons.article),
+                        ArticleViewElement.summaryview: Icon(Icons.summarize),
                       },
-                      onValueChanged: (View? value) {
+                      onValueChanged: (ArticleViewElement? value) {
                         if (value != null) {
                           setState(() {
                             selectedView = value;
@@ -110,297 +122,518 @@ class _ArticleViewState extends State<ArticleView> {
           ),
         ),
         body: PageView.builder(
-            onPageChanged: ((int index) => {
-                  article = widget.articles[index],
-                  _markArticleAsRead(article.id2 ?? 0, article.serverId),
-                }),
-            itemCount: widget.articles.length,
-            controller: pageController,
-            itemBuilder: (BuildContext ctxt, int index) {
-              article = widget.articles[index];
-              article.isRead = true;
-              final document = html_parser.parse(article.summaryContent);
-              final textSpan =
-                  _parseHtmlToTextSpan(document.body!, themeProvider.theme);
-              final ScrollController scrollController = ScrollController();
-              return SafeArea(
+          onPageChanged: ((int index) => {
+                article = widget.articles[index],
+                _markArticleAsRead(
+                    article.id2 ?? 0, article.serverId, article.isLocal),
+                widget.articles[widget.articleIndex].isRead = true,
+              }),
+          itemCount: widget.articles.length,
+          controller: pageController,
+          itemBuilder: (BuildContext ctxt, int index) {
+            article = widget.articles[index];
+            article.isRead = true;
+            final document = html_parser.parse(article.summaryContent);
+            // final textSpan = ;
+            final ScrollController scrollController = ScrollController();
+            return SafeArea(
                 bottom: false,
-                child: Stack(
-                  children: [
-                    selectedView == View.articleview
-                        ? RawScrollbar(
-                            interactive: true,
-                            thumbColor: Color(themeProvider.theme.primaryColor),
-                            thickness: 4,
-                            radius: const Radius.circular(1),
-                            // thumbVisibility: true,
-                            controller: scrollController,
-                            child: ScrollConfiguration(
-                              behavior: ScrollConfiguration.of(context)
-                                  .copyWith(scrollbars: false),
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 15),
-                                color: Color(themeProvider.theme.surfaceColor),
-                                child: SingleChildScrollView(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: themeProvider
-                                          .fontSettings.articleContentWidth),
-                                  controller: scrollController,
-                                  child: Column(
-                                    children: [
-                                      // Padding(
-                                      //   padding: EdgeInsets.all(60),
-                                      // ),
-                                      Container(
-                                        width: double.infinity,
-                                        padding:
-                                            const EdgeInsets.only(bottom: 10),
-                                        child: SelectableText(
-                                          article.title,
-                                          textAlign: themeProvider
-                                              .fontSettings.titleAlignment,
-                                          style: TextStyle(
-                                            fontSize: themeProvider
-                                                .fontSettings.titleFontSize,
-                                            fontFamily: themeProvider
-                                                .fontSettings.articleFont,
-                                            fontVariations: const [
-                                              FontVariation('wght', 600)
-                                            ],
-                                            color: Color(
-                                                themeProvider.theme.textColor),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        width: double.infinity,
-                                        padding:
-                                            const EdgeInsets.only(bottom: 10),
-                                        child: RichText(
-                                          textAlign: TextAlign.left,
-                                          text: TextSpan(
-                                            text: article.originTitle,
+                child: Consumer<FontProvider>(builder: (_, fontProvider, __) {
+                  return Stack(
+                    children: [
+                      selectedView == ArticleViewElement.articleview
+                          ? RawScrollbar(
+                              interactive: true,
+                              thumbColor:
+                                  Color(themeProvider.theme.primaryColor),
+                              thickness: 4,
+                              radius: const Radius.circular(1),
+                              // thumbVisibility: true,
+                              controller: scrollController,
+                              child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context)
+                                    .copyWith(scrollbars: false),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 15),
+                                  color:
+                                      Color(themeProvider.theme.surfaceColor),
+                                  child: SingleChildScrollView(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: fontProvider
+                                            .fontSettings.articleContentWidth),
+                                    controller: scrollController,
+                                    child: Column(
+                                      children: [
+                                        // Padding(
+                                        //   padding: EdgeInsets.all(60),
+                                        // ),
+                                        Container(
+                                          width: double.infinity,
+                                          padding:
+                                              const EdgeInsets.only(bottom: 10),
+                                          child: SelectableText(
+                                            article.title,
+                                            textAlign: fontProvider
+                                                .fontSettings.titleAlignment,
                                             style: TextStyle(
-                                              fontSize: themeProvider
-                                                  .fontSettings.articleFontSize,
-                                              fontFamily: themeProvider
+                                              fontSize: fontProvider
+                                                  .fontSettings.titleFontSize,
+                                              fontFamily: fontProvider
                                                   .fontSettings.articleFont,
                                               fontVariations: const [
                                                 FontVariation('wght', 600)
                                               ],
                                               color: Color(themeProvider
-                                                  .theme.primaryColor),
+                                                  .theme.textColor),
                                             ),
-                                            children: <TextSpan>[
-                                              const TextSpan(
-                                                text: '・',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                          ),
+                                        ),
+                                        Container(
+                                          width: double.infinity,
+                                          padding:
+                                              const EdgeInsets.only(bottom: 10),
+                                          child: RichText(
+                                            textAlign: TextAlign.left,
+                                            text: TextSpan(
+                                              text: article.originTitle,
+                                              style: TextStyle(
+                                                fontSize: fontProvider
+                                                    .fontSettings
+                                                    .articleFontSize,
+                                                fontFamily: fontProvider
+                                                    .fontSettings.articleFont,
+                                                fontVariations: const [
+                                                  FontVariation('wght', 600)
+                                                ],
+                                                color: Color(themeProvider
+                                                    .theme.primaryColor),
                                               ),
-                                              TextSpan(
-                                                text: article.author,
-                                                style: TextStyle(
-                                                  fontSize: themeProvider
-                                                      .fontSettings
-                                                      .articleFontSize,
-                                                  fontFamily: themeProvider
-                                                      .fontSettings.articleFont,
-                                                  fontVariations: const [
-                                                    FontVariation('wght', 300)
-                                                  ],
-                                                  color: Color(themeProvider
-                                                      .theme.textColor),
+                                              children: <TextSpan>[
+                                                const TextSpan(
+                                                  text: '・',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
-                                              ),
-                                              const TextSpan(
-                                                text: '・',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
+                                                TextSpan(
+                                                  text: article.author,
+                                                  style: TextStyle(
+                                                    fontSize: fontProvider
+                                                        .fontSettings
+                                                        .articleFontSize,
+                                                    fontFamily: fontProvider
+                                                        .fontSettings
+                                                        .articleFont,
+                                                    fontVariations: const [
+                                                      FontVariation('wght', 300)
+                                                    ],
+                                                    color: Color(themeProvider
+                                                        .theme.textColor),
+                                                  ),
                                                 ),
-                                              ),
-                                              TextSpan(
-                                                text:
-                                                    timeAgo(article.published),
-                                                style: TextStyle(
-                                                  fontSize: themeProvider
-                                                      .fontSettings
-                                                      .articleFontSize,
-                                                  fontFamily: themeProvider
-                                                      .fontSettings.articleFont,
-                                                  fontVariations: const [
-                                                    FontVariation('wght', 300)
-                                                  ],
-                                                  color: Color(themeProvider
-                                                      .theme.textColor),
+                                                const TextSpan(
+                                                  text: '・',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
-                                              ),
+                                                TextSpan(
+                                                  text: timeAgo(
+                                                      article.published),
+                                                  style: TextStyle(
+                                                    fontSize: fontProvider
+                                                        .fontSettings
+                                                        .articleFontSize,
+                                                    fontFamily: fontProvider
+                                                        .fontSettings
+                                                        .articleFont,
+                                                    fontVariations: const [
+                                                      FontVariation('wght', 300)
+                                                    ],
+                                                    color: Color(themeProvider
+                                                        .theme.textColor),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        SelectableText.rich(
+                                          _parseHtmlToTextSpan(document.body!,
+                                              themeProvider.theme),
+                                          textAlign: fontProvider
+                                              .fontSettings.articleAlignment,
+                                          style: TextStyle(
+                                            height: fontProvider.fontSettings
+                                                .articleLineSpacing, //line spacing
+                                            letterSpacing: 0, //letter spacing
+                                            fontSize: fontProvider
+                                                .fontSettings.articleFontSize,
+                                            fontFamily: fontProvider
+                                                .fontSettings.articleFont,
+                                            color: Color(
+                                                themeProvider.theme.textColor),
+                                            fontVariations: const [
+                                              FontVariation('wght', 400)
                                             ],
                                           ),
                                         ),
-                                      ),
-                                      SelectableText.rich(
-                                        textSpan,
-                                        textAlign: themeProvider
-                                            .fontSettings.articleAlignment,
-                                        style: TextStyle(
-                                            height: themeProvider.fontSettings
-                                                .articleLineSpacing, //line spacing
-                                            letterSpacing: 0, //letter spacing
-                                            fontSize: themeProvider.fontSettings.articleFontSize,
-                                            fontFamily: themeProvider.fontSettings.articleFont,
-                                            color: Color(themeProvider.theme.textColor),
-                                            fontVariations: const [
-                                              FontVariation('wght', 400)
-                                            ]),
-                                      ),
-                                      const SizedBox(height: 80),
-                                      // HtmlWidget(
-                                      //   widget.article.summaryContent,
-                                      //   enableCaching: true,
-                                      //   customWidgetBuilder: (element) {
-                                      //     if (element.localName == 'p') {
-                                      //       return SelectableText.rich(
-                                      //         _parseHtmlToTextSpan(element),
-                                      //         style: TextStyle(fontSize: 16.0),
-                                      //       );
-                                      //     }
-                                      //     if (element.localName == 'img') {
-                                      //       final src = element.attributes['src'];
-                                      //       if (src != null) {
-                                      //         return Image.network(src);
-                                      //       }
-                                      //     }
-                                      //     return null;
-                                      //   },
-                                      //   renderMode: RenderMode.column,
-                                      //   textStyle: TextStyle(fontSize: 14),
-                                      //   customStylesBuilder: (element) {
-                                      //     if (element.attributes.containsKey("href")) {
-                                      //       return {
-                                      //         'color': "0xFF4C02E8",
-                                      //         'font-weight': "bold",
-                                      //         "text-decoration-line": "none"
-                                      //       };
-                                      //     }
+                                        const SizedBox(height: 80),
+                                        // HtmlWidget(
+                                        //   widget.article.summaryContent,
+                                        //   enableCaching: true,
+                                        //   customWidgetBuilder: (element) {
+                                        //     if (element.localName == 'p') {
+                                        //       return SelectableText.rich(
+                                        //         _parseHtmlToTextSpan(element),
+                                        //         style: TextStyle(fontSize: 16.0),
+                                        //       );
+                                        //     }
+                                        //     if (element.localName == 'img') {
+                                        //       final src = element.attributes['src'];
+                                        //       if (src != null) {
+                                        //         return Image.network(src);
+                                        //       }
+                                        //     }
+                                        //     return null;
+                                        //   },
+                                        //   renderMode: RenderMode.column,
+                                        //   textStyle: TextStyle(fontSize: 14),
+                                        //   customStylesBuilder: (element) {
+                                        //     if (element.attributes.containsKey("href")) {
+                                        //       return {
+                                        //         'color': "0xFF4C02E8",
+                                        //         'font-weight': "bold",
+                                        //         "text-decoration-line": "none"
+                                        //       };
+                                        //     }
 
-                                      //     return null;
-                                      //   },
-                                      // ),
-                                    ],
+                                        //     return null;
+                                        //   },
+                                        // ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          )
-                        : CustomWebView(
-                            theme: themeProvider.theme,
-                            url: article.canonical,
-                          ),
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.decelerate,
-                      bottom: isPopupImageVisible ? 0 : -screenHeight,
-                      left: 0,
-                      child: Container(
-                        width: screenWidth,
-                        height: screenHeight,
-                        color: const Color.fromARGB(118, 0, 0, 0),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(
-                              sigmaX: isPopupImageVisible ? 5 : 0,
-                              sigmaY: isPopupImageVisible ? 5 : 0),
-                          child: SafeArea(
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                InteractiveViewer(
-                                  trackpadScrollCausesScale: true,
-                                  clipBehavior: Clip.none,
-                                  minScale: 0.1,
-                                  maxScale: 4,
-                                  child: _showImage(
-                                      popupImageSrc, popupImageCaption),
-                                ),
-                                Positioned(
-                                  bottom: 40,
-                                  child: Container(
-                                    color: const Color.fromARGB(148, 0, 0, 0),
-                                    width: screenWidth,
-                                    alignment: Alignment.center,
-                                    padding: const EdgeInsets.all(20),
-                                    child: Text(
-                                      popupImageCaption,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontFamily: themeProvider
-                                              .fontSettings.articleFont,
-                                          fontVariations: const [
-                                            FontVariation('wght', 500)
-                                          ]),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 100,
-                                  right: 0,
-                                  child: Container(
-                                    alignment: Alignment.topRight,
-                                    padding: const EdgeInsets.all(20),
-                                    child: CupertinoButton(
-                                      borderRadius: BorderRadius.circular(100),
-                                      color:
-                                          const Color.fromARGB(104, 62, 62, 62),
-                                      padding: const EdgeInsets.all(10),
-                                      onPressed: () {
-                                        setState(() {
-                                          isPopupImageVisible = false;
-                                        });
-                                      },
-                                      child: const Icon(
-                                        Icons.close,
+                            )
+                          : selectedView == ArticleViewElement.webview
+                              ? CustomWebView(
+                                  url: article.canonical,
+                                )
+                              : RawScrollbar(
+                                  interactive: true,
+                                  thumbColor:
+                                      Color(themeProvider.theme.primaryColor),
+                                  thickness: 4,
+                                  radius: const Radius.circular(1),
+                                  // thumbVisibility: true,
+                                  controller: scrollController,
+                                  child: ScrollConfiguration(
+                                    behavior: ScrollConfiguration.of(context)
+                                        .copyWith(scrollbars: false),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 15),
+                                      color: Color(
+                                          themeProvider.theme.surfaceColor),
+                                      child: SingleChildScrollView(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: fontProvider
+                                                .fontSettings
+                                                .articleContentWidth),
+                                        controller: scrollController,
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                              width: double.infinity,
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10),
+                                              child: SelectableText(
+                                                article.title,
+                                                textAlign: fontProvider
+                                                    .fontSettings
+                                                    .titleAlignment,
+                                                style: TextStyle(
+                                                  fontSize: fontProvider
+                                                      .fontSettings
+                                                      .titleFontSize,
+                                                  fontFamily: fontProvider
+                                                      .fontSettings.articleFont,
+                                                  fontVariations: const [
+                                                    FontVariation('wght', 600)
+                                                  ],
+                                                  color: Color(themeProvider
+                                                      .theme.textColor),
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              width: double.infinity,
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10),
+                                              child: RichText(
+                                                textAlign: TextAlign.left,
+                                                text: TextSpan(
+                                                  text: article.originTitle,
+                                                  style: TextStyle(
+                                                    fontSize: fontProvider
+                                                        .fontSettings
+                                                        .articleFontSize,
+                                                    fontFamily: fontProvider
+                                                        .fontSettings
+                                                        .articleFont,
+                                                    fontVariations: const [
+                                                      FontVariation('wght', 600)
+                                                    ],
+                                                    color: Color(themeProvider
+                                                        .theme.primaryColor),
+                                                  ),
+                                                  children: <TextSpan>[
+                                                    const TextSpan(
+                                                      text: '・',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: article.author,
+                                                      style: TextStyle(
+                                                        fontSize: fontProvider
+                                                            .fontSettings
+                                                            .articleFontSize,
+                                                        fontFamily: fontProvider
+                                                            .fontSettings
+                                                            .articleFont,
+                                                        fontVariations: const [
+                                                          FontVariation(
+                                                              'wght', 300)
+                                                        ],
+                                                        color: Color(
+                                                            themeProvider.theme
+                                                                .textColor),
+                                                      ),
+                                                    ),
+                                                    const TextSpan(
+                                                      text: '・',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: timeAgo(
+                                                          article.published),
+                                                      style: TextStyle(
+                                                        fontSize: fontProvider
+                                                            .fontSettings
+                                                            .articleFontSize,
+                                                        fontFamily: fontProvider
+                                                            .fontSettings
+                                                            .articleFont,
+                                                        fontVariations: const [
+                                                          FontVariation(
+                                                              'wght', 300)
+                                                        ],
+                                                        color: Color(
+                                                            themeProvider.theme
+                                                                .textColor),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            FutureBuilder(
+                                              future:
+                                                  widget.api.getArticleSummary(
+                                                article,
+                                                apiKey,
+                                              ),
+                                              builder: (BuildContext context,
+                                                  AsyncSnapshot<String>
+                                                      snapshot) {
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return CupertinoActivityIndicator();
+                                                } else if (snapshot.hasError) {
+                                                  log("Error in summary");
+                                                  log(snapshot.data ?? "");
+                                                  return Icon(Icons.error);
+                                                } else if (snapshot.hasData) {
+                                                  var summary = "";
+                                                  var resp = jsonDecode(
+                                                      snapshot.data ?? "");
+                                                  if (resp != "") {
+                                                    summary = resp["choices"][0]
+                                                        ["message"]["content"];
+                                                  }
+                                                  return SelectableText.rich(
+                                                    TextSpan(text: summary),
+                                                    textAlign: fontProvider
+                                                        .fontSettings
+                                                        .articleAlignment,
+                                                    style: TextStyle(
+                                                      height: fontProvider
+                                                          .fontSettings
+                                                          .articleLineSpacing, //line spacing
+                                                      letterSpacing:
+                                                          0, //letter spacing
+                                                      fontSize: fontProvider
+                                                          .fontSettings
+                                                          .articleFontSize,
+                                                      fontFamily: fontProvider
+                                                          .fontSettings
+                                                          .articleFont,
+                                                      color: Color(themeProvider
+                                                          .theme.textColor),
+                                                      fontVariations: const [
+                                                        FontVariation(
+                                                            'wght', 400)
+                                                      ],
+                                                    ),
+                                                  ); //The built widget
+                                                } else {
+                                                  log("Error2 in summary");
+                                                  return Icon(Icons.error);
+                                                }
+                                                // return SelectableText.rich(
+                                                //   _parseHtmlToTextSpan(
+                                                //       widget.api.getArticleSummary(
+                                                //           article) as dom.Element,
+                                                //       themeProvider.theme),
+                                                //   textAlign: widget
+                                                //       .themeProvider
+                                                //       .fontSettings
+                                                //       .articleAlignment,
+                                                //   style: TextStyle(
+                                                //       height: widget
+                                                //           .themeProvider
+                                                //           .fontSettings
+                                                //           .articleLineSpacing, //line spacing
+                                                //       letterSpacing: 0, //letter spacing
+                                                //       fontSize: themeProvider.fontSettings.articleFontSize,
+                                                //       fontFamily: themeProvider.fontSettings.articleFont,
+                                                //       color: Color(themeProvider.theme.textColor),
+                                                //       fontVariations: const [
+                                                //         FontVariation('wght', 400)
+                                                //       ]),
+                                                // );
+                                                // const SizedBox(height: 80),
+                                              },
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.decelerate,
+                        bottom: isPopupImageVisible ? 0 : -screenHeight,
+                        left: 0,
+                        child: Container(
+                          width: screenWidth,
+                          height: screenHeight,
+                          color: const Color.fromARGB(118, 0, 0, 0),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                                sigmaX: isPopupImageVisible ? 5 : 0,
+                                sigmaY: isPopupImageVisible ? 5 : 0),
+                            child: SafeArea(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  InteractiveViewer(
+                                    trackpadScrollCausesScale: true,
+                                    clipBehavior: Clip.none,
+                                    minScale: 0.1,
+                                    maxScale: 4,
+                                    child: _showImage(
+                                        popupImageSrc, popupImageCaption),
+                                  ),
+                                  Positioned(
+                                    bottom: 40,
+                                    child: Container(
+                                      color: const Color.fromARGB(148, 0, 0, 0),
+                                      width: screenWidth,
+                                      alignment: Alignment.center,
+                                      padding: const EdgeInsets.all(20),
+                                      child: Text(
+                                        popupImageCaption,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontFamily: fontProvider
+                                                .fontSettings.articleFont,
+                                            fontVariations: const [
+                                              FontVariation('wght', 500)
+                                            ]),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 100,
+                                    right: 0,
+                                    child: Container(
+                                      alignment: Alignment.topRight,
+                                      padding: const EdgeInsets.all(20),
+                                      child: CupertinoButton(
+                                        borderRadius:
+                                            BorderRadius.circular(100),
+                                        color: const Color.fromARGB(
+                                            104, 62, 62, 62),
+                                        padding: const EdgeInsets.all(10),
+                                        onPressed: () {
+                                          setState(() {
+                                            isPopupImageVisible = false;
+                                          });
+                                        },
+                                        child: const Icon(
+                                          Icons.close,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
+                        // ),
                       ),
-                      // ),
-                    ),
-                    ActionBar(
-                      article: article,
-                      databaseService: widget.databaseService,
-                      api: widget.api,
-                      themeProvider: themeProvider,
-                      pageController: pageController,
-                    ),
-                  ],
-                ),
-              );
-            }),
+                      ActionBar(
+                        article: article,
+                        databaseService: widget.databaseService,
+                        api: widget.api,
+                        pageController: pageController,
+                      ),
+                    ],
+                  );
+                }));
+          },
+        ),
       );
+      // pageController.animateToPage(widget.articleIndex,
+      //     curve: Curves.bounceIn, duration: Durations.long2);
+      // return pv;
     });
-    // pageController.animateToPage(widget.articleIndex,
-    //     curve: Curves.bounceIn, duration: Durations.long2);
-    // return pv;
   }
 
-  Future<void> _markArticleAsRead(int articleId, int serverId) async {
-    // setState(() {});
+  Future<void> _markArticleAsRead(
+      int articleId, int serverId, bool isLocal) async {
     try {
       //Getting Server list
       await widget.databaseService.deleteUnreadId(articleId);
-      Server server = await widget.databaseService.server(serverId);
-      await widget.api.markAsRead(server.baseUrl, server.auth, articleId);
+      if (!isLocal) {
+        Server server = await widget.databaseService.server(serverId);
+        await widget.api.markAsRead(server.baseUrl, server.auth, articleId);
+      }
     } on Exception {
       // Handle error
-    } finally {
-      // setState(() {});
-    }
+    } finally {}
   }
 
   TextSpan _parseHtmlToTextSpan(dom.Element element, AppTheme theme) {
@@ -633,29 +866,29 @@ class _ArticleViewState extends State<ArticleView> {
     }
   }
 
-  static Animation<Decoration> _boxDecorationAnimation(
-      Animation<double> animation) {
-    return _tween.animate(
-      CurvedAnimation(
-        parent: animation,
-        curve: Interval(
-          0.0,
-          CupertinoContextMenu.animationOpensAt,
-        ),
-      ),
-    );
-  }
+  // static Animation<Decoration> _boxDecorationAnimation(
+  //     Animation<double> animation) {
+  //   return _tween.animate(
+  //     CurvedAnimation(
+  //       parent: animation,
+  //       curve: Interval(
+  //         0.0,
+  //         CupertinoContextMenu.animationOpensAt,
+  //       ),
+  //     ),
+  //   );
+  // }
 }
 
-final DecorationTween _tween = DecorationTween(
-  begin: BoxDecoration(
-    color: CupertinoColors.systemYellow,
-    boxShadow: const <BoxShadow>[],
-    borderRadius: BorderRadius.circular(20.0),
-  ),
-  end: BoxDecoration(
-    color: CupertinoColors.systemYellow,
-    boxShadow: CupertinoContextMenu.kEndBoxShadow,
-    borderRadius: BorderRadius.circular(20.0),
-  ),
-);
+// final DecorationTween _tween = DecorationTween(
+//   begin: BoxDecoration(
+//     color: CupertinoColors.systemYellow,
+//     boxShadow: const <BoxShadow>[],
+//     borderRadius: BorderRadius.circular(20.0),
+//   ),
+//   end: BoxDecoration(
+//     color: CupertinoColors.systemYellow,
+//     boxShadow: CupertinoContextMenu.kEndBoxShadow,
+//     borderRadius: BorderRadius.circular(20.0),
+//   ),
+// );

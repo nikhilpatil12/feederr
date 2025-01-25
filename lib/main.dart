@@ -1,60 +1,89 @@
 import 'package:feederr/models/font_settings.dart';
-import 'package:feederr/utils/themeprovider.dart';
+import 'package:feederr/utils/providers/apiprovider.dart';
+import 'package:feederr/utils/providers/fontprovider.dart';
+import 'package:feederr/utils/providers/themeprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/home.dart';
 import 'package:feederr/models/app_theme.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final themeProvider = await ThemeProvider.create(
+    AppTheme(),
+  );
+  final fontProvider = await FontProvider.create(
+    FontSettings(),
+  );
+  final apiProvider = await ApiProvider.create(
+    "",
+  );
+  runApp(
+    MyApp(
+      themeProvider: themeProvider,
+      fontProvider: fontProvider,
+      apiProvider: apiProvider,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeProvider themeProvider;
+  final FontProvider fontProvider;
+  final ApiProvider apiProvider;
+  const MyApp(
+      {super.key,
+      required this.themeProvider,
+      required this.fontProvider,
+      required this.apiProvider});
 
   @override
   Widget build(BuildContext context) {
     return Builder(builder: (context) {
-      final theme = ThemeProvider(AppTheme(), FontSettings());
-      theme.loadSettings();
-      return ChangeNotifierProvider(
-        create: (_) => theme,
-        child: Consumer<ThemeProvider>(
-          builder: (context, themeProvider, child) {
-            // ThemeData themeData = themeProvider.theme.isDark
+// await themeProvider.initializePreferences();
+      themeProvider.loadTheme();
+      fontProvider.loadSettings();
+      apiProvider.loadApiKey();
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => themeProvider),
+          ChangeNotifierProvider(create: (_) => fontProvider),
+          ChangeNotifierProvider(create: (_) => apiProvider),
+        ],
+        child: Selector<ThemeProvider, AppTheme>(
+          selector: (_, themeProvider) => themeProvider.theme,
+          builder: (_, theme, __) {
+            // ThemeData themeData = theme.isDark
             //     ? ThemeData.from()
             //     : ThemeData.light();
             ThemeData themeData = ThemeData(
-              canvasColor: Color(themeProvider.theme.surfaceColor),
+              canvasColor: Color(theme.surfaceColor),
               splashColor: Colors.transparent,
-              primaryColor: Color(themeProvider.theme.primaryColor),
+              primaryColor: Color(theme.primaryColor),
               highlightColor: Colors.transparent,
-              // colorSchemeSeed: Color(themeProvider.theme.primaryColor),
-              // scaffoldBackgroundColor: Color(themeProvider.theme.surfaceColor),
+              // colorSchemeSeed: Color(theme.primaryColor),
+              // scaffoldBackgroundColor: Color(theme.surfaceColor),
               colorScheme: ColorScheme(
-                primary: Color(themeProvider.theme.primaryColor),
-                brightness: themeProvider.theme.isDark
-                    ? Brightness.dark
-                    : Brightness.light,
-                onPrimary: Color(themeProvider.theme.textColor),
-                secondary: Color(themeProvider.theme.secondaryColor),
+                primary: Color(theme.primaryColor),
+                brightness: theme.isDark ? Brightness.dark : Brightness.light,
+                onPrimary: Color(theme.textColor),
+                secondary: Color(theme.secondaryColor),
                 onSecondary: Color.fromRGBO(255, 0, 183, 1),
                 error: Color.fromRGBO(205, 0, 0, 1),
                 onError: Color.fromRGBO(255, 255, 255, 1),
-                surface: Color(themeProvider.theme.surfaceColor),
-                // surfaceContainer: Color(themeProvider.theme.surfaceColor),
-                // surfaceDim: Color(themeProvider.theme.surfaceColor),
-                // surfaceBright: Color(themeProvider.theme.surfaceColor),
-                onSurface: Color(themeProvider.theme.textColor),
-                // primaryContainer: Color(themeProvider.theme.surfaceColor),
+                surface: Color(theme.surfaceColor),
+                // surfaceContainer: Color(theme.surfaceColor),
+                // surfaceDim: Color(theme.surfaceColor),
+                // surfaceBright: Color(theme.surfaceColor),
+                onSurface: Color(theme.textColor),
+                // primaryContainer: Color(theme.surfaceColor),
               ),
             );
             return MaterialApp(
               title: "Feederr",
               theme: themeData,
-              home: HomeScreen(
-                themeProvider: themeProvider,
-              ),
+              home: HomeScreen(),
             );
           },
         ),

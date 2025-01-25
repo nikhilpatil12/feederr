@@ -21,7 +21,7 @@
             "request": "launch",
             "type": "dart",
             "deviceId": "00008120-000E51603A9B401E",
-            "flutterMode": "release"
+            "flutterMode": "debug"
         },
         {
             "name": "Flutter Mac",
