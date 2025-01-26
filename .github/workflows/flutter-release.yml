@@ -3,7 +3,7 @@ name: Create Android Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,3 +34,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
+          token: ${{ secrets.PAT_TOKEN }}
