@@ -4,8 +4,8 @@ import 'package:feederr/models/starred.dart';
 import 'package:feederr/models/unread.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/fontprovider.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/font_provider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,9 +52,6 @@ class _ArticleReadToggleState extends State<ActionBar> {
     setState(() {
       isRead = !isRead;
     });
-
-    // Call the callback to perform any external actions (e.g., server updates).
-    // widget.onToggleRead(widget.article.id2 ?? 0, isRead);
   }
 
   Future<void> _markArticleAsRead(
@@ -63,10 +60,10 @@ class _ArticleReadToggleState extends State<ActionBar> {
     try {
       //Getting Server list
       await widget.databaseService.deleteUnreadId(articleId);
-      if (!isLocal) {
-        Server server = await widget.databaseService.server(serverId);
-        await widget.api.markAsRead(server.baseUrl, server.auth, articleId);
-      }
+      // if (!isLocal) {
+      //   Server server = await widget.databaseService.server(serverId);
+      //   await widget.api.markAsRead(server.baseUrl, server.auth, articleId);
+      // }
     } on Exception {
       // Handle error
     } finally {
@@ -81,10 +78,10 @@ class _ArticleReadToggleState extends State<ActionBar> {
       //Getting Server list
       await widget.databaseService
           .insertUnreadId(UnreadId(articleId: articleId, serverId: serverId));
-      if (!isLocal) {
-        Server server = await widget.databaseService.server(serverId);
-        await widget.api.markAsUnread(server.baseUrl, server.auth, articleId);
-      }
+      // if (!isLocal) {
+      //   Server server = await widget.databaseService.server(serverId);
+      //   await widget.api.markAsUnread(server.baseUrl, server.auth, articleId);
+      // }
     } on Exception {
       // Handle error
     } finally {
@@ -99,10 +96,10 @@ class _ArticleReadToggleState extends State<ActionBar> {
       //Getting Server list
       await widget.databaseService
           .insertStarredId(StarredId(articleId: articleId, serverId: serverId));
-      if (!isLocal) {
-        Server server = await widget.databaseService.server(serverId);
-        await widget.api.markAsStarred(server.baseUrl, server.auth, articleId);
-      }
+      // if (!isLocal) {
+      //   Server server = await widget.databaseService.server(serverId);
+      //   await widget.api.markAsStarred(server.baseUrl, server.auth, articleId);
+      // }
     } on Exception {
       // Handle error
     } finally {
@@ -116,11 +113,11 @@ class _ArticleReadToggleState extends State<ActionBar> {
     try {
       //Getting Server list
       await widget.databaseService.deleteStarredId(articleId);
-      if (!isLocal) {
-        Server server = await widget.databaseService.server(serverId);
-        await widget.api
-            .markAsNotStarred(server.baseUrl, server.auth, articleId);
-      }
+      // if (!isLocal) {
+      //   Server server = await widget.databaseService.server(serverId);
+      //   await widget.api
+      //       .markAsNotStarred(server.baseUrl, server.auth, articleId);
+      // }
     } on Exception {
       // Handle error
     } finally {
@@ -164,24 +161,24 @@ class _ArticleReadToggleState extends State<ActionBar> {
                   color: Color(themeProvider.theme.surfaceColor),
                   onPressed: () => {
                     setState(() {
-                      widget.article.isRead ?? true
+                      widget.article.isRead
                           ? {
                               _markArticleAsUnread(
                                   widget.article.id2 ?? 0,
                                   widget.article.serverId,
-                                  widget.article.isLocal ?? true),
+                                  widget.article.isLocal),
                               widget.article.isRead = false,
                             }
                           : {
                               _markArticleAsRead(
                                   widget.article.id2 ?? 0,
                                   widget.article.serverId,
-                                  widget.article.isLocal ?? true),
+                                  widget.article.isLocal),
                               widget.article.isRead = true,
                             };
                     }),
                   },
-                  icon: !(widget.article.isRead ?? false)
+                  icon: !(widget.article.isRead)
                       ? Icon(CupertinoIcons.circle_fill)
                       : Icon(CupertinoIcons.circle),
                 ),
@@ -189,20 +186,15 @@ class _ArticleReadToggleState extends State<ActionBar> {
                   color: Color(themeProvider.theme.surfaceColor),
                   onPressed: () => {
                     setState(() {
-                      !(widget.article.isStarred ?? false)
-                          ? _markArticleAsStarred(
-                              widget.article.id2 ?? 0,
-                              widget.article.serverId,
-                              widget.article.isLocal ?? true)
-                          : _markArticleAsNotStarred(
-                              widget.article.id2 ?? 0,
-                              widget.article.serverId,
-                              widget.article.isLocal ?? true);
-                      widget.article.isStarred =
-                          !(widget.article.isStarred ?? false);
+                      !(widget.article.isStarred)
+                          ? _markArticleAsStarred(widget.article.id2 ?? 0,
+                              widget.article.serverId, widget.article.isLocal)
+                          : _markArticleAsNotStarred(widget.article.id2 ?? 0,
+                              widget.article.serverId, widget.article.isLocal);
+                      widget.article.isStarred = !(widget.article.isStarred);
                     }),
                   },
-                  icon: !(widget.article.isStarred ?? false)
+                  icon: !(widget.article.isStarred)
                       ? Icon(CupertinoIcons.star)
                       : Icon(CupertinoIcons.star_fill),
                 ),

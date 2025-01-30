@@ -4,14 +4,14 @@ import 'package:feederr/models/article.dart';
 import 'package:feederr/pages/article_view.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ArticleListItem extends StatefulWidget {
-  const ArticleListItem({
+  ArticleListItem({
     super.key,
     required this.articles,
     required this.articleIndex,
@@ -24,7 +24,8 @@ class ArticleListItem extends StatefulWidget {
   final int articleIndex;
   final APIService api;
   final DatabaseService databaseService;
-  final VoidCallback onReturn;
+  final void Function(int) onReturn;
+  final AppUtils utils = AppUtils();
 
   @override
   State<ArticleListItem> createState() => _ArticleListItemState();
@@ -40,8 +41,8 @@ class _ArticleListItemState extends State<ArticleListItem> {
         builder: (_, theme, __) {
           return GestureDetector(
             onTap: () async {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute<void>(
+              Navigator.of(context, rootNavigator: true).push<int>(
+                MaterialPageRoute<int>(
                   builder: (BuildContext context) {
                     return ArticleView(
                       articles: widget.articles,
@@ -51,10 +52,10 @@ class _ArticleListItemState extends State<ArticleListItem> {
                     );
                   },
                 ),
-              ).then((_) {
+              ).then((lastArticleIndex) {
                 // This will be called after Navigator.pop() on NextPage
                 // print("Returned to Article List");
-                widget.onReturn();
+                widget.onReturn(lastArticleIndex ?? widget.articleIndex);
                 // onReturnToPage();
               });
             },
@@ -95,6 +96,7 @@ class _ArticleListItemState extends State<ArticleListItem> {
                     flex: 3,
                     child: _ArticleDetails(
                       article: widget.articles[widget.articleIndex],
+                      utils: widget.utils,
                     ),
                   ),
                   Expanded(
@@ -106,8 +108,7 @@ class _ArticleListItemState extends State<ArticleListItem> {
                           Radius.circular(10),
                         ),
                       ),
-                      child: _showImage(
-                          widget.articles[widget.articleIndex].imageUrl),
+                      child: _showImage(widget.articles[widget.articleIndex].imageUrl),
                       // Image.network(
                       //   widget.article.imageUrl,
                       //   errorBuilder: (context, exception, stackTrace) {
@@ -139,25 +140,21 @@ class _ArticleListItemState extends State<ArticleListItem> {
       return GestureDetector(
         child: CachedNetworkImage(
           imageUrl: src,
+          cacheManager: widget.api.cacheManager,
           progressIndicatorBuilder: (context, url, downloadProgress) =>
               const CupertinoActivityIndicator(),
           errorWidget: (context, url, error) => Container(),
         ),
-        // child: Image.network(
-        //   widget.article.imageUrl,
-        //   errorBuilder: (context, exception, stackTrace) {
-        //     return const SizedBox(height: 40);
-        //   },
-        // ),
       );
     }
   }
 }
 
 class _ArticleDetails extends StatelessWidget {
-  const _ArticleDetails({required this.article});
+  const _ArticleDetails({required this.article, required this.utils});
 
   final Article article;
+  final AppUtils utils;
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +184,7 @@ class _ArticleDetails extends StatelessWidget {
                 ),
                 const Padding(padding: EdgeInsets.symmetric(vertical: 1.0)),
                 Text(
-                  timeAgo(article.published),
+                  utils.timeAgo(article.published),
                   style: TextStyle(
                     fontSize: 10.0,
                     color: Color(theme.textColor),

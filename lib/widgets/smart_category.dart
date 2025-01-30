@@ -3,7 +3,7 @@ import 'package:feederr/models/categories/smart_categoryentry.dart';
 import 'package:feederr/pages/article_list.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/widgets/feed.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

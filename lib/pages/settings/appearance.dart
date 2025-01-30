@@ -1,17 +1,14 @@
 import 'dart:ui';
 
-import 'package:feederr/main.dart';
-import 'package:feederr/models/font_settings.dart';
 import 'package:feederr/pages/settings/custom_theme.dart';
-import 'package:feederr/utils/providers/fontprovider.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/font_provider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:feederr/widgets/theme_preview.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 
 class AppearanceSettings extends StatefulWidget {
@@ -47,9 +44,35 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
   @override
   Widget build(BuildContext context) {
     //TODO: Settings
-    return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
-      return Consumer<FontProvider>(builder: (_, fontProvider, __) {
-        return ListView(
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    // return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
+    return Consumer<FontProvider>(builder: (_, fontProvider, __) {
+      return Scaffold(
+        // extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor:
+              Color(themeProvider.theme.surfaceColor).withAlpha(56),
+          elevation: 0,
+          title: Text(
+            'Appearance',
+            style: TextStyle(
+              color: Color(themeProvider.theme.textColor),
+            ),
+            overflow: TextOverflow.fade,
+          ),
+          // flexibleSpace: ClipRect(
+          //   child: BackdropFilter(
+          //     filter: ImageFilter.blur(
+          //       sigmaX: 36,
+          //       sigmaY: 36,
+          //     ),
+          //     child: Container(
+          //       color: Colors.transparent,
+          //     ),
+          //   ),
+          // ),
+        ),
+        body: ListView(
           scrollDirection: Axis.vertical,
           children: <Widget>[
             ListTile(
@@ -247,17 +270,17 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                   ),
                                   overflow: TextOverflow.fade,
                                 ),
-                                flexibleSpace: ClipRect(
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 36,
-                                      sigmaY: 36,
-                                    ),
-                                    child: Container(
-                                      color: Colors.transparent,
-                                    ),
-                                  ),
-                                ),
+                                // flexibleSpace: ClipRect(
+                                //   child: BackdropFilter(
+                                //     filter: ImageFilter.blur(
+                                //       sigmaX: 36,
+                                //       sigmaY: 36,
+                                //     ),
+                                //     child: Container(
+                                //       color: Colors.transparent,
+                                //     ),
+                                //   ),
+                                // ),
                               ),
                               body: CustomThemeSettings(),
                             );
@@ -453,7 +476,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                               );
                               // themeProvider.theme.primaryColor = newColor.value;
                               themeProvider.updateTheme(
-                                  'primaryColor', newColor.value);
+                                  'primaryColor', newColor.value32bit);
                             }),
                       ),
                       // Container(
@@ -1134,8 +1157,9 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
               ),
             ),
           ],
-        );
-      });
+        ),
+      );
     });
+    // });
   }
 }

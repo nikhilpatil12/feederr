@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/local_feeds/local_article.dart';
@@ -5,10 +7,11 @@ import 'package:feederr/models/local_feeds/local_feedentry.dart';
 import 'package:feederr/pages/article_list.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
@@ -83,9 +86,7 @@ class LocalFeedListItem extends StatefulWidget {
 }
 
 class _LocalFeedListItemState extends State<LocalFeedListItem> {
-  // Color _color = Colors.transparent;
-  final ValueNotifier<Color> _colorNotifier =
-      ValueNotifier<Color>(Colors.transparent);
+  final ValueNotifier<Color> _colorNotifier = ValueNotifier<Color>(Colors.transparent);
 
   @override
   Widget build(BuildContext context) {
@@ -103,25 +104,16 @@ class _LocalFeedListItemState extends State<LocalFeedListItem> {
                     )
                   },
               onTapDown: (tapDetails) => {
-                    // setState(() {
-                    _colorNotifier.value =
-                        Color(theme.primaryColor).withAlpha(90),
-                    // })
+                    _colorNotifier.value = Color(theme.primaryColor).withAlpha(90),
                   },
               onTapUp: (tapDetails) => {
                     Future.delayed(const Duration(milliseconds: 200), () {
-                      // setState(() {
                       _colorNotifier.value = const Color.fromARGB(0, 0, 0, 0);
-                      // code to be executed after 2 seconds
-                      // });
                     })
                   },
               onTapCancel: () => {
                     Future.delayed(const Duration(milliseconds: 200), () {
-                      // setState(() {
                       _colorNotifier.value = const Color.fromARGB(0, 0, 0, 0);
-                      // code to be executed after 2 seconds
-                      // });
                     })
                   },
               child: Slidable(
@@ -141,14 +133,11 @@ class _LocalFeedListItemState extends State<LocalFeedListItem> {
                       ),
                       child: SlidableAction(
                         onPressed: (_) => {
-                          showFeed(context, widget.feed, widget.api,
-                              widget.databaseService, widget.callback),
+                          showFeed(context, widget.feed, widget.api, widget.databaseService,
+                              widget.callback),
                         },
-                        backgroundColor:
-                            Color(theme.primaryColor).withAlpha(180),
-                        // foregroundColor: Colors.white,
+                        backgroundColor: Color(theme.primaryColor).withAlpha(180),
                         icon: CupertinoIcons.news,
-                        // label: 'Delete',
                       ),
                     ),
                     Theme(
@@ -168,7 +157,6 @@ class _LocalFeedListItemState extends State<LocalFeedListItem> {
                         padding: EdgeInsets.all(10),
                         backgroundColor: Colors.deepOrange,
                         icon: CupertinoIcons.delete,
-                        // label: 'Delete',
                       ),
                     ),
                   ],
@@ -188,16 +176,20 @@ class _LocalFeedListItemState extends State<LocalFeedListItem> {
                         child: child,
                       );
                     },
-                    child: _FeedDetails(feed: widget.feed)),
+                    child: _FeedDetails(
+                      feed: widget.feed,
+                      api: widget.api,
+                    )),
               ));
         });
   }
 }
 
 class _FeedDetails extends StatelessWidget {
-  const _FeedDetails({required this.feed});
+  const _FeedDetails({required this.feed, required this.api});
 
   final LocalFeedEntry feed;
+  final APIService api;
 
   @override
   Widget build(BuildContext context) {
@@ -213,34 +205,22 @@ class _FeedDetails extends StatelessWidget {
                   fit: FlexFit.tight,
                   child: FutureBuilder(
                     future: _loadImage(feed.feed.iconUrl, theme),
-                    builder:
-                        (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                    builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Image.asset(
                           "assets/rss-16.png",
                           color: Color(theme.textColor),
                         );
                       } else if (snapshot.hasError) {
-                        return Image.asset("assets/rss-16.png",
-                            color: Color(theme.textColor));
+                        return Image.asset("assets/rss-16.png", color: Color(theme.textColor));
                       } else if (snapshot.hasData) {
                         return snapshot.data!; // The built widget
                       } else {
-                        return Image.asset("assets/rss-16.png",
-                            color: Color(theme.textColor));
+                        return Image.asset("assets/rss-16.png", color: Color(theme.textColor));
                       }
                     },
                   ),
                 ),
-                // CachedNetworkImage(
-                //   width: 20,
-                //   height: 20,
-                //   imageUrl: feed.feed.iconUrl,
-                //   progressIndicatorBuilder: (context, url, downloadProgress) =>
-                //       const CupertinoActivityIndicator(),
-                //   errorWidget: (context, url, error) =>
-                //       Image.asset("assets/rss-16.png"),
-                // ),
                 const Padding(padding: EdgeInsets.only(left: 10)),
                 Flexible(
                   flex: 10,
@@ -293,6 +273,7 @@ class _FeedDetails extends StatelessWidget {
           return SvgPicture.memory(response.bodyBytes);
         } else {
           return CachedNetworkImage(
+            cacheManager: api.cacheManager,
             width: 20,
             height: 20,
             imageUrl: feed.feed.iconUrl,

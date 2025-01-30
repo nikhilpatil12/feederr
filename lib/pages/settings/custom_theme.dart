@@ -1,5 +1,5 @@
 import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/widgets/theme_preview.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/cupertino.dart';

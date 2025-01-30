@@ -16,7 +16,6 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseService {
-  // Singleton pattern
   static final DatabaseService _databaseService = DatabaseService._internal();
   factory DatabaseService() => _databaseService;
   DatabaseService._internal();
@@ -107,8 +106,8 @@ class DatabaseService {
     if (oldVersion < newVersion) {
       // Version 2 adds a new table
       // Check if the table exists
-      var result = await db.rawQuery(
-          'SELECT name FROM sqlite_master WHERE type="table" AND name="rss_feeds"');
+      var result = await db
+          .rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="rss_feeds"');
 
       if (result.isEmpty) {
         // Table doesn't exist, create it
@@ -116,8 +115,8 @@ class DatabaseService {
           'CREATE TABLE rss_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT)',
         );
       }
-      var result2 = await db.rawQuery(
-          'SELECT name FROM sqlite_master WHERE type="table" AND name="local_feeds"');
+      var result2 = await db
+          .rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="local_feeds"');
 
       if (result2.isEmpty) {
         // Table doesn't exist, create it
@@ -125,8 +124,8 @@ class DatabaseService {
           'CREATE TABLE local_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER)',
         );
       }
-      var result3 = await db.rawQuery(
-          'SELECT name FROM sqlite_master WHERE type="table" AND name="local_articles"');
+      var result3 = await db
+          .rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="local_articles"');
 
       if (result3.isEmpty) {
         await db.execute(
@@ -218,15 +217,13 @@ class DatabaseService {
   Future<List<RssFeedUrl>> rssFeeds() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('rss_feeds');
-    return List.generate(
-        maps.length, (index) => RssFeedUrl.fromMap(maps[index]));
+    return List.generate(maps.length, (index) => RssFeedUrl.fromMap(maps[index]));
   }
 
   Future<List<LocalFeed>> localFeeds() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('local_feeds');
-    return List.generate(
-        maps.length, (index) => LocalFeed.fromMap(maps[index]));
+    return List.generate(maps.length, (index) => LocalFeed.fromMap(maps[index]));
   }
 
   Future<LocalFeed?> localFeedByUrl(String url) async {
@@ -243,23 +240,20 @@ class DatabaseService {
   Future<List<LocalArticle>> localArticles() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('local_articles');
-    return List.generate(
-        maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
+    return List.generate(maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
   }
 
-  Future<List<LocalArticle>> localArticlesByLocalFeed(
-      LocalFeed localFeed) async {
+  Future<List<LocalArticle>> localArticlesByLocalFeed(LocalFeed localFeed) async {
     final db = await _databaseService.database;
-    final List<Map<String, dynamic>> maps = await db.query('local_articles',
-        where: 'serverId = ?', whereArgs: [localFeed.id]);
+    final List<Map<String, dynamic>> maps =
+        await db.query('local_articles', where: 'serverId = ?', whereArgs: [localFeed.id]);
 
-    List<LocalArticle> liArticles = List.generate(
-        maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
+    List<LocalArticle> liArticles =
+        List.generate(maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
     List<UnreadId> liUnreadId = await unreadIds();
     List<StarredId> liStarredId = await starredIds();
     final unreadIdSet = liUnreadId.map((unread) => unread.articleId).toSet();
-    final starredIdSet =
-        liStarredId.map((starred) => starred.articleId).toSet();
+    final starredIdSet = liStarredId.map((starred) => starred.articleId).toSet();
     for (var article in liArticles) {
       article.isRead = !unreadIdSet.contains(article.id2);
       article.isStarred = starredIdSet.contains(article.id2);
@@ -267,8 +261,7 @@ class DatabaseService {
     return liArticles;
   }
 
-  Future<List<LocalArticle>> localUnreadArticlesByLocalFeed(
-      LocalFeed localFeed) async {
+  Future<List<LocalArticle>> localUnreadArticlesByLocalFeed(LocalFeed localFeed) async {
     final db = await _databaseService.database;
 
     // Define the SQL query to join unread_ids with local_articles based on serverId
@@ -286,8 +279,7 @@ class DatabaseService {
     );
 
     List<StarredId> liStarredId = await starredIds();
-    final starredIdSet =
-        liStarredId.map((starred) => starred.articleId).toSet();
+    final starredIdSet = liStarredId.map((starred) => starred.articleId).toSet();
     for (var article in liArticles) {
       article.isRead = false;
       article.isStarred = starredIdSet.contains(article.id2);
@@ -297,8 +289,7 @@ class DatabaseService {
     return liArticles;
   }
 
-  Future<List<LocalArticle>> localStarredArticlesByLocalFeed(
-      LocalFeed localFeed) async {
+  Future<List<LocalArticle>> localStarredArticlesByLocalFeed(LocalFeed localFeed) async {
     final db = await _databaseService.database;
 
     // Define the SQL query to join unread_ids with local_articles based on serverId
@@ -310,8 +301,8 @@ class DatabaseService {
     WHERE s.serverId = ? AND l.serverId = ?
   ''', [0, localFeed.id]);
 
-    List<LocalArticle> liArticles = List.generate(
-        maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
+    List<LocalArticle> liArticles =
+        List.generate(maps.length, (index) => LocalArticle.fromDBMap(maps[index]));
     List<UnreadId> liUnreadId = await unreadIds();
     final unreadIdSet = liUnreadId.map((unread) => unread.articleId).toSet();
     for (var article in liArticles) {
@@ -336,14 +327,26 @@ class DatabaseService {
 
     final List<Map<String, dynamic>> maps = await db.query('articles');
 
+    return List.generate(maps.length, (index) => Article.fromDBMap(maps[index]));
+  }
+
+  Future<List<Article>> articlesForServer(int serverId) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'articles',
+      where: 'serverId = ?',
+      whereArgs: [serverId],
+    );
     return List.generate(
-        maps.length, (index) => Article.fromDBMap(maps[index]));
+      maps.length,
+      (index) => Article.fromDBMap(maps[index]),
+    );
   }
 
   Future<StarredId?> starredId(int? articleId) async {
     final db = await _databaseService.database;
-    final List<Map<String, dynamic>> maps = await db
-        .query('starred_ids', where: 'articleId = ?', whereArgs: [articleId]);
+    final List<Map<String, dynamic>> maps =
+        await db.query('starred_ids', where: 'articleId = ?', whereArgs: [articleId]);
     if (maps.isNotEmpty) {
       return StarredId.fromDBMap(maps[0]);
     } else {
@@ -413,15 +416,39 @@ class DatabaseService {
   Future<List<UnreadId>> unreadIds() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('unread_ids');
+    return List.generate(maps.length, (index) => UnreadId.fromDBMap(maps[index]));
+  }
+
+  Future<List<UnreadId>> unreadIdsForServer(int serverId) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'unread_ids',
+      where: 'serverId = ?',
+      whereArgs: [serverId],
+    );
     return List.generate(
-        maps.length, (index) => UnreadId.fromDBMap(maps[index]));
+      maps.length,
+      (index) => UnreadId.fromDBMap(maps[index]),
+    );
   }
 
   Future<List<StarredId>> starredIds() async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query('starred_ids');
+    return List.generate(maps.length, (index) => StarredId.fromDBMap(maps[index]));
+  }
+
+  Future<List<StarredId>> starredIdsForServer(int serverId) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'starred_ids',
+      where: 'serverId = ?',
+      whereArgs: [serverId],
+    );
     return List.generate(
-        maps.length, (index) => StarredId.fromDBMap(maps[index]));
+      maps.length,
+      (index) => StarredId.fromDBMap(maps[index]),
+    );
   }
 
   // Future<List<TaggedId>> taggedIds() async {
@@ -445,6 +472,19 @@ class DatabaseService {
     return List.generate(maps.length, (index) => Tag.fromMap(maps[index]));
   }
 
+  Future<List<Tag>> tagsForServer(int serverId) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'tag_list',
+      where: 'serverId = ?',
+      whereArgs: [serverId],
+    );
+    return List.generate(
+      maps.length,
+      (index) => Tag.fromMap(maps[index]),
+    );
+  }
+
   Future<Tag> tag(int id) async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps =
@@ -460,15 +500,15 @@ class DatabaseService {
 
   Future<List<Feed>> feedsByServerId(int serverId) async {
     final db = await _databaseService.database;
-    final List<Map<String, dynamic>> maps = await db
-        .query('feed_list', where: 'serverId = ?', whereArgs: [serverId]);
+    final List<Map<String, dynamic>> maps =
+        await db.query('feed_list', where: 'serverId = ?', whereArgs: [serverId]);
     return List.generate(maps.length, (index) => Feed.fromDBMap(maps[index]));
   }
 
   Future<Feed?> feedByServerAndFeedId(int serverId, String feedId) async {
     final db = await _databaseService.database;
-    final List<Map<String, dynamic>> maps = await db.query('feed_list',
-        where: 'serverId = ? AND id = ?', whereArgs: [serverId, feedId]);
+    final List<Map<String, dynamic>> maps = await db
+        .query('feed_list', where: 'serverId = ? AND id = ?', whereArgs: [serverId, feedId]);
     if (maps.isEmpty) {
       return null; // Or handle the case where no Feed is found
     } else {
@@ -503,8 +543,7 @@ class DatabaseService {
     return Server.fromMap(maps[0]);
   }
 
-  Future<Server?> serverByUrlAndUsername(
-      String baseUrl, String userName) async {
+  Future<Server?> serverByUrlAndUsername(String baseUrl, String userName) async {
     final db = await _databaseService.database;
 
     final List<Map<String, dynamic>> maps = await db.query('server_list',
@@ -617,8 +656,7 @@ class DatabaseService {
     return id;
   }
 
-  Future<void> insertArticleWithCategories(
-      Article article, List<String> categories) async {
+  Future<void> insertArticleWithCategories(Article article, List<String> categories) async {
     // Insert article first to get the article ID
     int articleId = await insertArticle(article);
 
@@ -629,16 +667,14 @@ class DatabaseService {
 
         ArticleCategory? aC = await getArticleCategory(articleId, categoryId);
         if (aC == null) {
-          ArticleCategory artCat =
-              ArticleCategory(articleId: articleId, categoryId: categoryId);
+          ArticleCategory artCat = ArticleCategory(articleId: articleId, categoryId: categoryId);
           await insertArticleCategory(artCat);
         }
       }
     });
   }
 
-  Future<void> insertFeedWithCategories(
-      Feed feed, List<String> categories) async {
+  Future<void> insertFeedWithCategories(Feed feed, List<String> categories) async {
     int feedId;
     // Insert article first to get the article ID
     Feed? f = await feedByServerAndFeedId(feed.serverId, feed.id);
@@ -654,8 +690,7 @@ class DatabaseService {
 
       FeedCategory? fC = await getFeedCategory(feedId, categoryId);
       if (fC == null) {
-        FeedCategory feedCat =
-            FeedCategory(feedId: feedId, categoryId: categoryId);
+        FeedCategory feedCat = FeedCategory(feedId: feedId, categoryId: categoryId);
         await insertFeedCategory(feedCat);
       }
     });
@@ -691,14 +726,11 @@ class DatabaseService {
     await db.insert('articles_categories', articleCategory.toMap());
   }
 
-  Future<ArticleCategory?> getArticleCategory(
-      int articleId, int categoryId) async {
+  Future<ArticleCategory?> getArticleCategory(int articleId, int categoryId) async {
     final db = await _databaseService.database;
 
-    final List<Map<String, dynamic>> maps = await db.query(
-        'articles_categories',
-        where: 'article_id = ? AND category_id = ?',
-        whereArgs: [articleId, categoryId]);
+    final List<Map<String, dynamic>> maps = await db.query('articles_categories',
+        where: 'article_id = ? AND category_id = ?', whereArgs: [articleId, categoryId]);
     if (maps.isEmpty) {
       return null; // Or handle the case where no Feed is found
     } else {
@@ -709,11 +741,9 @@ class DatabaseService {
   Future<List<ArticleCategory>> articlesCategory() async {
     final db = await _databaseService.database;
 
-    final List<Map<String, dynamic>> maps =
-        await db.query('articles_categories');
+    final List<Map<String, dynamic>> maps = await db.query('articles_categories');
 
-    return List.generate(
-        maps.length, (index) => ArticleCategory.fromMap(maps[index]));
+    return List.generate(maps.length, (index) => ArticleCategory.fromMap(maps[index]));
   }
 
   Future<void> insertFeedCategory(FeedCategory feedCategory) async {
@@ -725,8 +755,7 @@ class DatabaseService {
     final db = await _databaseService.database;
 
     final List<Map<String, dynamic>> maps = await db.query('feed_categories',
-        where: 'feed_id = ? AND category_id = ?',
-        whereArgs: [feedId, categoryId]);
+        where: 'feed_id = ? AND category_id = ?', whereArgs: [feedId, categoryId]);
 
     if (maps.isEmpty) {
       return null; // Or handle the case where no Feed is found
@@ -740,17 +769,15 @@ class DatabaseService {
 
     final List<Map<String, dynamic>> maps = await db.query('feed_categories');
 
-    return List.generate(
-        maps.length, (index) => FeedCategory.fromMap(maps[index]));
+    return List.generate(maps.length, (index) => FeedCategory.fromMap(maps[index]));
   }
 
-  Future<List<CategoryEntry>> getCategoryEntries() async {
+  Future<List<CategoryEntry>> getAllCategoryEntries(int serverId) async {
     final db = await _databaseService.database;
     // Get all categories
     // Get all categories
     final categoryMaps = await db.query('categories');
-    final categories =
-        categoryMaps.map((map) => Category.fromMap(map)).toList();
+    final categories = categoryMaps.map((map) => Category.fromMap(map)).toList();
 
     // For each category, get the feeds and articles
     List<CategoryEntry> categoryEntries = [];
@@ -760,7 +787,8 @@ class DatabaseService {
       SELECT feed_list.* FROM feed_list
       JOIN feed_categories ON feed_list.id2 = feed_categories.feed_id
       WHERE feed_categories.category_id = ?
-    ''', [category.id]);
+      AND feed_list.serverId = ?
+      ''', [category.id, serverId]);
       final feeds = feedMaps.map((map) => Feed.fromMap(map)).toList();
 
       // For each feed, get the articles
@@ -769,12 +797,11 @@ class DatabaseService {
         final feedArticleMaps = await db.rawQuery('''
         SELECT articles.* FROM articles
         WHERE articles.origin_streamId = ?
-      ''', [feed.id]);
-        final feedArticles =
-            feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
+        AND articles.serverId = ?
+        ''', [feed.id, serverId]);
+        final feedArticles = feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-        feedEntries.add(FeedEntry(
-            feed: feed, articles: feedArticles, count: feedArticles.length));
+        feedEntries.add(FeedEntry(feed: feed, articles: feedArticles, count: feedArticles.length));
       }
 
       // Get articles for the category
@@ -782,15 +809,14 @@ class DatabaseService {
       SELECT articles.* FROM articles
       JOIN articles_categories ON articles.id2 = articles_categories.article_id
       WHERE articles_categories.category_id = ?
-    ''', [category.id]);
-      final articles =
-          articleMaps.map((map) => Article.fromDBMap(map)).toList();
+        AND articles.serverId = ?
+      ''', [category.id, serverId]);
+      final articles = articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-      List<UnreadId> liUnreadIds = await unreadIds();
-      List<StarredId> liStarredIds = await starredIds();
+      List<UnreadId> liUnreadIds = await unreadIdsForServer(serverId);
+      List<StarredId> liStarredIds = await starredIdsForServer(serverId);
       final unreadIdSet = liUnreadIds.map((unread) => unread.articleId).toSet();
-      final starredIdSet =
-          liStarredIds.map((starred) => starred.articleId).toSet();
+      final starredIdSet = liStarredIds.map((starred) => starred.articleId).toSet();
 
       // Use a for loop to update isRead
       for (var article in articles) {
@@ -799,21 +825,17 @@ class DatabaseService {
       }
       // Create the CategoryEntry
       categoryEntries.add(CategoryEntry(
-          category: category,
-          feedEntry: feedEntries,
-          articles: articles,
-          count: articles.length));
+          category: category, feedEntry: feedEntries, articles: articles, count: articles.length));
     }
 
     return categoryEntries;
   }
 
-  Future<List<CategoryEntry>> getCategoryEntriesWithStarredArticles() async {
+  Future<List<CategoryEntry>> getCategoryEntriesWithStarredArticles(int serverId) async {
     final db = await _databaseService.database;
     // Get all categories
     final categoryMaps = await db.query('categories');
-    final categories =
-        categoryMaps.map((map) => Category.fromMap(map)).toList();
+    final categories = categoryMaps.map((map) => Category.fromMap(map)).toList();
 
     // For each category, get the feeds and articles
     List<CategoryEntry> categoryEntries = [];
@@ -823,7 +845,8 @@ class DatabaseService {
       SELECT feed_list.* FROM feed_list
       JOIN feed_categories ON feed_list.id2 = feed_categories.feed_id
       WHERE feed_categories.category_id = ?
-    ''', [category.id]);
+      AND feed_list.serverId = ?
+      ''', [category.id, serverId]);
       final feeds = feedMaps.map((map) => Feed.fromMap(map)).toList();
 
       // For each feed, get the articles
@@ -833,13 +856,13 @@ class DatabaseService {
         SELECT articles.* FROM articles
         JOIN starred_ids ON articles.id2 = starred_ids.articleId
         WHERE articles.origin_streamId = ?
-      ''', [feed.id]);
-        List<Article> feedArticles =
-            feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
+        AND articles.serverId = ?
+      ''', [feed.id, serverId]);
+        List<Article> feedArticles = feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
 
         if (feedArticles.isNotEmpty) {
-          feedEntries.add(FeedEntry(
-              feed: feed, articles: feedArticles, count: feedArticles.length));
+          feedEntries
+              .add(FeedEntry(feed: feed, articles: feedArticles, count: feedArticles.length));
         }
       }
 
@@ -849,11 +872,11 @@ class DatabaseService {
       JOIN articles_categories ON articles.id2 = articles_categories.article_id
       JOIN starred_ids ON articles.id2 = starred_ids.articleId
       WHERE articles_categories.category_id = ?
-    ''', [category.id]);
-      final articles =
-          articleMaps.map((map) => Article.fromDBMap(map)).toList();
+        AND articles.serverId = ?
+      ''', [category.id, serverId]);
+      final articles = articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-      List<UnreadId> liUnreadIds = await unreadIds();
+      List<UnreadId> liUnreadIds = await unreadIdsForServer(serverId);
       final unreadIdSet = liUnreadIds.map((unread) => unread.articleId).toSet();
 
       // Use a for loop to update isRead
@@ -874,12 +897,11 @@ class DatabaseService {
     return categoryEntries;
   }
 
-  Future<List<CategoryEntry>> getCategoryEntriesWithNewArticles() async {
+  Future<List<CategoryEntry>> getCategoryEntriesWithNewArticles(int serverId) async {
     final db = await _databaseService.database;
     // Get all categories
     final categoryMaps = await db.query('categories');
-    final categories =
-        categoryMaps.map((map) => Category.fromMap(map)).toList();
+    final categories = categoryMaps.map((map) => Category.fromMap(map)).toList();
 
     // For each category, get the feeds and articles
     List<CategoryEntry> categoryEntries = [];
@@ -889,7 +911,8 @@ class DatabaseService {
       SELECT feed_list.* FROM feed_list
       JOIN feed_categories ON feed_list.id2 = feed_categories.feed_id
       WHERE feed_categories.category_id = ?
-    ''', [category.id]);
+      AND feed_list.serverId = ?
+      ''', [category.id, serverId]);
       final feeds = feedMaps.map((map) => Feed.fromMap(map)).toList();
 
       // For each feed, get the articles
@@ -899,13 +922,13 @@ class DatabaseService {
         SELECT articles.* FROM articles
         JOIN unread_ids ON articles.id2 = unread_ids.articleId
         WHERE articles.origin_streamId = ?
-      ''', [feed.id]);
-        final feedArticles =
-            feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
+        AND articles.serverId = ?
+        ''', [feed.id, serverId]);
+        final feedArticles = feedArticleMaps.map((map) => Article.fromDBMap(map)).toList();
 
         if (feedArticles.isNotEmpty) {
-          feedEntries.add(FeedEntry(
-              feed: feed, articles: feedArticles, count: feedArticles.length));
+          feedEntries
+              .add(FeedEntry(feed: feed, articles: feedArticles, count: feedArticles.length));
         }
       }
 
@@ -915,13 +938,12 @@ class DatabaseService {
       JOIN articles_categories ON articles.id2 = articles_categories.article_id
       JOIN unread_ids ON articles.id2 = unread_ids.articleId
       WHERE articles_categories.category_id = ?
-    ''', [category.id]);
-      final articles =
-          articleMaps.map((map) => Article.fromDBMap(map)).toList();
+      AND articles.serverId = ?
+      ''', [category.id, serverId]);
+      final articles = articleMaps.map((map) => Article.fromDBMap(map)).toList();
 
-      List<StarredId> liStarredIds = await starredIds();
-      final starredIdSet =
-          liStarredIds.map((starred) => starred.articleId).toSet();
+      List<StarredId> liStarredIds = await starredIdsForServer(serverId);
+      final starredIdSet = liStarredIds.map((starred) => starred.articleId).toSet();
 
       // Use a for loop to update isRead
       for (var article in articles) {
@@ -939,5 +961,33 @@ class DatabaseService {
     }
 
     return categoryEntries;
+  }
+
+  Future<List<int>> getArticlesNotInUnreadByServer(int serverId) async {
+    final db = await _databaseService.database;
+    // Query to fetch articles not in unread_ids table for a specific server
+    final List<Map<String, dynamic>> results = await db.rawQuery('''
+    SELECT articles.id2
+    FROM articles
+    LEFT JOIN unread_ids ON articles.id2 = unread_ids.articleId
+    WHERE unread_ids.articleId IS NULL AND articles.serverId = ?
+  ''', [serverId]);
+
+    // Extract article IDs from the query result
+    return results.map((row) => row['id2'] as int).toList();
+  }
+
+  Future<List<int>> getArticlesToStarByServer(int serverId) async {
+    final db = await _databaseService.database;
+    // Query to fetch articles not in unread_ids table for a specific server
+    final List<Map<String, dynamic>> results = await db.rawQuery('''
+    SELECT articles.id2
+    FROM articles
+    INNER JOIN starred_ids ON articles.id2 = starred_ids.articleId
+    WHERE articles.serverId = ?
+  ''', [serverId]);
+
+    // Extract article IDs from the query result
+    return results.map((row) => row['id2'] as int).toList();
   }
 }

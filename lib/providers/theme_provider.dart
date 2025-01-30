@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/font_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

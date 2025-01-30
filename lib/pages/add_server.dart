@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/server.dart';
 import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/widgets/server_form.dart';
 import 'package:feederr/utils/dbhelper.dart';
 import 'package:flutter/cupertino.dart';
@@ -142,89 +141,200 @@ class ServerListState extends State<ServerList> {
           databaseService: widget.databaseService,
           api: widget.api,
         ),
+        SizedBox(
+          height: 50,
+        ),
         isLoading
             ? const Center(child: CircularProgressIndicator())
-            : servers.isNotEmpty == true
-                ? Center(
-                    child: SizedBox(
-                      height: 200.0,
-                      child: ListView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        scrollDirection: Axis.vertical,
-                        itemCount: servers.length,
-                        itemBuilder: (BuildContext ctxt, int index) {
-                          // return Text(servers[index].baseUrl);
+            : servers.length > 1
+                ? Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: List.generate(servers.length, (index) {
                           if (servers[index].baseUrl != "localhost") {
-                            return Selector<ThemeProvider, int>(
-                                selector: (_, themeProvider) =>
-                                    themeProvider.theme.textColor,
-                                builder: (context, textColor, child) {
-                                  return Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 8,
-                                        child: ListTile(
-                                          iconColor: Color(textColor),
-                                          textColor: Color(textColor),
-                                          title: Text(servers[index].baseUrl),
-                                          subtitle:
-                                              Text(servers[index].userName),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: IconButton(
-                                          color: Color(textColor),
-                                          highlightColor: Colors.transparent,
-                                          onPressed: () => {
-                                            _editForm(
-                                                servers[index].baseUrl,
-                                                servers[index].userName,
-                                                servers[index].password),
-                                          },
-                                          icon:
-                                              const Icon(CupertinoIcons.pencil),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: IconButton(
-                                          color: Color(textColor),
-                                          highlightColor: Colors.transparent,
-                                          onPressed: () async => {
-                                            widget.databaseService
-                                                .deleteServerByUrlAndUser(
-                                                    servers[index].baseUrl,
-                                                    servers[index].userName),
-                                            servers = await widget
-                                                .databaseService
-                                                .servers(),
-                                            Fluttertoast.showToast(
-                                                msg: "Server deleted",
-                                                toastLength: Toast.LENGTH_SHORT,
-                                                gravity: ToastGravity.BOTTOM,
-                                                timeInSecForIosWeb: 1,
-                                                backgroundColor:
-                                                    const Color.fromRGBO(
-                                                        144, 36, 60, 1),
-                                                textColor: Colors.white,
-                                                fontSize: 16.0),
-                                            setState(() {})
-                                          },
-                                          icon:
-                                              const Icon(CupertinoIcons.trash),
-                                        ),
-                                      )
-                                    ],
-                                  );
-                                });
+                            return Row(
+                              children: [
+                                Expanded(
+                                  flex: 8,
+                                  child: ListTile(
+                                    leading: CircleAvatar(child: Icon(Icons.computer)),
+                                    // iconColor: Color(textColor),
+                                    // textColor: Color(textColor),
+                                    title: Text(servers[index].baseUrl),
+                                    subtitle: Text(servers[index].userName),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: IconButton(
+                                    // color: Color(textColor),
+                                    highlightColor: Colors.transparent,
+                                    onPressed: () => {
+                                      _editForm(servers[index].baseUrl, servers[index].userName,
+                                          servers[index].password),
+                                    },
+                                    icon: const Icon(CupertinoIcons.pencil),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: IconButton(
+                                    // color: Color(textColor),
+                                    highlightColor: Colors.transparent,
+                                    onPressed: () async => {
+                                      widget.databaseService.deleteServerByUrlAndUser(
+                                          servers[index].baseUrl, servers[index].userName),
+                                      servers = await widget.databaseService.servers(),
+                                      if (mounted)
+                                        {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: const Text('Server deleted'),
+                                              backgroundColor: Colors.redAccent,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10.0),
+                                              ),
+                                            ),
+                                          ),
+                                          setState(() {})
+                                        }
+                                    },
+                                    icon: const Icon(CupertinoIcons.trash),
+                                  ),
+                                )
+                              ],
+                            );
+
+                            // ListTile(
+                            //   leading:
+                            //       CircleAvatar(child: Icon(Icons.computer)),
+                            //   title: Text(servers[index].baseUrl),
+                            //   subtitle: Text(servers[index].userName),
+                            //   trailing: Container(
+                            //     width: 100,
+                            //     child: Row(
+                            //       children: [
+                            //         IconButton(
+                            //           // color: Color(textColor),
+                            //           // highlightColor: Colors.transparent,
+                            //           onPressed: () => {
+                            //             _editForm(
+                            //                 servers[index].baseUrl,
+                            //                 servers[index].userName,
+                            //                 servers[index].password),
+                            //           },
+                            //           icon: const Icon(CupertinoIcons.pencil),
+                            //         ),
+                            //         IconButton(
+                            //           // color: Color(textColor),
+                            //           highlightColor: Colors.transparent,
+                            //           onPressed: () async => {
+                            //             widget.databaseService
+                            //                 .deleteServerByUrlAndUser(
+                            //                     servers[index].baseUrl,
+                            //                     servers[index].userName),
+                            //             servers = await widget.databaseService
+                            //                 .servers(),
+                            //             Fluttertoast.showToast(
+                            //                 msg: "Server deleted",
+                            //                 toastLength: Toast.LENGTH_SHORT,
+                            //                 gravity: ToastGravity.BOTTOM,
+                            //                 timeInSecForIosWeb: 1,
+                            //                 backgroundColor:
+                            //                     const Color.fromRGBO(
+                            //                         144, 36, 60, 1),
+                            //                 textColor: Colors.white,
+                            //                 fontSize: 16.0),
+                            //             setState(() {})
+                            //           },
+                            //           icon: const Icon(CupertinoIcons.trash),
+                            //         )
+                            //       ],
+                            //     ),
+                            //   ),
+                            // );
                           } else {
                             return Container();
                           }
-                        },
+                        }),
                       ),
                     ),
+                    //   ListView.builder(
+                    //     physics: const NeverScrollableScrollPhysics(),
+                    //     shrinkWrap: true,
+                    //     scrollDirection: Axis.vertical,
+                    //     itemCount: servers.length - 1,
+                    //     itemBuilder: (BuildContext ctxt, int index) {
+                    //       // return Text(servers[index].baseUrl);
+                    //       if (servers[index].baseUrl != "localhost") {
+                    //         return Selector<ThemeProvider, int>(
+                    //             selector: (_, themeProvider) =>
+                    //                 themeProvider.theme.textColor,
+                    //             builder: (context, textColor, child) {
+                    //               return Row(
+                    //                 children: [
+                    //                   Expanded(
+                    //                     flex: 8,
+                    //                     child: ListTile(
+                    //                       iconColor: Color(textColor),
+                    //                       textColor: Color(textColor),
+                    //                       title: Text(servers[index].baseUrl),
+                    //                       subtitle:
+                    //                           Text(servers[index].userName),
+                    //                     ),
+                    //                   ),
+                    //                   Expanded(
+                    //                     flex: 1,
+                    //                     child: IconButton(
+                    //                       color: Color(textColor),
+                    //                       highlightColor: Colors.transparent,
+                    //                       onPressed: () => {
+                    //                         _editForm(
+                    //                             servers[index].baseUrl,
+                    //                             servers[index].userName,
+                    //                             servers[index].password),
+                    //                       },
+                    //                       icon:
+                    //                           const Icon(CupertinoIcons.pencil),
+                    //                     ),
+                    //                   ),
+                    //                   Expanded(
+                    //                     flex: 1,
+                    //                     child: IconButton(
+                    //                       color: Color(textColor),
+                    //                       highlightColor: Colors.transparent,
+                    //                       onPressed: () async => {
+                    //                         widget.databaseService
+                    //                             .deleteServerByUrlAndUser(
+                    //                                 servers[index].baseUrl,
+                    //                                 servers[index].userName),
+                    //                         servers = await widget
+                    //                             .databaseService
+                    //                             .servers(),
+                    //                         Fluttertoast.showToast(
+                    //                             msg: "Server deleted",
+                    //                             toastLength: Toast.LENGTH_SHORT,
+                    //                             gravity: ToastGravity.BOTTOM,
+                    //                             timeInSecForIosWeb: 1,
+                    //                             backgroundColor:
+                    //                                 const Color.fromRGBO(
+                    //                                     144, 36, 60, 1),
+                    //                             textColor: Colors.white,
+                    //                             fontSize: 16.0),
+                    //                         setState(() {})
+                    //                       },
+                    //                       icon:
+                    //                           const Icon(CupertinoIcons.trash),
+                    //                     ),
+                    //                   )
+                    //                 ],
+                    //               );
+                    //             });
+                    //       } else {
+                    //         return Container();
+                    //       }
+                    //     },
+                    //   ),
                   )
                 : const Text('No servers configured yet'),
       ],

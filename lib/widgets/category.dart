@@ -4,7 +4,7 @@ import 'package:feederr/models/categories/categoryentry.dart';
 import 'package:feederr/pages/article_list.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/widgets/feed.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,11 +30,9 @@ class CategoryListItem extends StatefulWidget {
   State<CategoryListItem> createState() => _CategoryListItemState();
 }
 
-class _CategoryListItemState extends State<CategoryListItem>
-    with SingleTickerProviderStateMixin {
+class _CategoryListItemState extends State<CategoryListItem> with SingleTickerProviderStateMixin {
   // Color _color = Colors.transparent;
-  final ValueNotifier<Color> _colorNotifier =
-      ValueNotifier<Color>(Colors.transparent);
+  final ValueNotifier<Color> _colorNotifier = ValueNotifier<Color>(Colors.transparent);
 
   final ExpansionTileController controller = ExpansionTileController();
   late final slidableController = SlidableController(this);
@@ -49,8 +47,7 @@ class _CategoryListItemState extends State<CategoryListItem>
       vsync: this,
       duration: const Duration(seconds: 1),
     )..forward();
-    animation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(animationController);
+    animation = Tween<double>(begin: 0.0, end: 1.0).animate(animationController);
   }
 
   @override
@@ -107,14 +104,17 @@ class _CategoryListItemState extends State<CategoryListItem>
             child: ValueListenableBuilder<Color>(
               valueListenable: _colorNotifier,
               builder: (context, color, child) {
-                return Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: color,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: child,
-                );
+                if (widget.category.count > 0) {
+                  return Container(
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: color,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: child,
+                  );
+                }
+                return Container();
               },
               child: Slidable(
                 // Specify a key if the Slidable is dismissible.
@@ -148,8 +148,7 @@ class _CategoryListItemState extends State<CategoryListItem>
                             ),
                           ),
                         },
-                        backgroundColor:
-                            Color(theme.primaryColor).withAlpha(180),
+                        backgroundColor: Color(theme.primaryColor).withAlpha(180),
                         // foregroundColor: Colors.white,
                         icon: CupertinoIcons.news,
                         // label: 'Delete',
@@ -171,14 +170,12 @@ class _CategoryListItemState extends State<CategoryListItem>
                   tilePadding: const EdgeInsets.all(0),
                   maintainState: true,
                   trailing: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, bottom: 10, top: 10),
+                    padding: const EdgeInsets.only(left: 10, bottom: 10, top: 10),
                     child: GestureDetector(
                         child: Container(
                           decoration: BoxDecoration(
                             color: Color(theme.surfaceColor),
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(8)),
+                            borderRadius: const BorderRadius.all(Radius.circular(8)),
                             border: Border.all(
                               width: 1,
                               color: Color(theme.textColor),
@@ -204,15 +201,11 @@ class _CategoryListItemState extends State<CategoryListItem>
                                 // const Spacer(),
                                 AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 300),
-                                  transitionBuilder: (child, anim) =>
-                                      RotationTransition(
+                                  transitionBuilder: (child, anim) => RotationTransition(
                                     turns: child.key == const ValueKey('icon1')
-                                        ? Tween<double>(begin: 1, end: 0.75)
-                                            .animate(anim)
-                                        : Tween<double>(begin: 0.75, end: 1)
-                                            .animate(anim),
-                                    child: FadeTransition(
-                                        opacity: anim, child: child),
+                                        ? Tween<double>(begin: 1, end: 0.75).animate(anim)
+                                        : Tween<double>(begin: 0.75, end: 1).animate(anim),
+                                    child: FadeTransition(opacity: anim, child: child),
                                   ),
                                   child: _currIndex == 0
                                       ? Icon(CupertinoIcons.chevron_down,
@@ -254,8 +247,7 @@ class _CategoryListItemState extends State<CategoryListItem>
                             CupertinoIcons.folder,
                             color: Color(theme.primaryColor),
                           ),
-                          const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10)),
+                          const Padding(padding: EdgeInsets.symmetric(horizontal: 10)),
                           Flexible(
                             flex: 10,
                             fit: FlexFit.tight,

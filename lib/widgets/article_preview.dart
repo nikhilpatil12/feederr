@@ -1,14 +1,17 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/fontprovider.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/font_provider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:html/dom.dart' as dom;
@@ -19,8 +22,9 @@ class ArticlePreView extends StatefulWidget {
   final int articleIndex;
   final APIService api;
   final DatabaseService databaseService;
+  final AppUtils utils = AppUtils();
 
-  const ArticlePreView({
+  ArticlePreView({
     super.key,
     required this.article,
     required this.articleIndex,
@@ -46,12 +50,10 @@ class _ArticlePreViewState extends State<ArticlePreView> {
   @override
   Widget build(BuildContext context) {
     var screenWidth = MediaQuery.sizeOf(context).width;
-    var screenHeight = MediaQuery.sizeOf(context).height;
     Article article = widget.article;
     final document = html_parser.parse(article.summaryContent);
     return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
-      final textSpan =
-          _parseHtmlToTextSpan(document.body!, themeProvider.theme);
+      final textSpan = _parseHtmlToTextSpan(document.body!, themeProvider.theme);
       return SizedBox(
         width: screenWidth,
         height: 400,
@@ -61,8 +63,8 @@ class _ArticlePreViewState extends State<ArticlePreView> {
             color: Color(themeProvider.theme.surfaceColor),
             child: Consumer<FontProvider>(builder: (_, fontProvider, __) {
               return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                    horizontal: fontProvider.fontSettings.articleContentWidth),
+                padding:
+                    EdgeInsets.symmetric(horizontal: fontProvider.fontSettings.articleContentWidth),
                 child: Column(
                   children: [
                     Container(
@@ -102,13 +104,9 @@ class _ArticlePreViewState extends State<ArticlePreView> {
                             TextSpan(
                               text: article.author,
                               style: TextStyle(
-                                fontSize:
-                                    fontProvider.fontSettings.articleFontSize,
-                                fontFamily:
-                                    fontProvider.fontSettings.articleFont,
-                                fontVariations: const [
-                                  FontVariation('wght', 300)
-                                ],
+                                fontSize: fontProvider.fontSettings.articleFontSize,
+                                fontFamily: fontProvider.fontSettings.articleFont,
+                                fontVariations: const [FontVariation('wght', 300)],
                                 color: Color(themeProvider.theme.textColor),
                               ),
                             ),
@@ -119,15 +117,11 @@ class _ArticlePreViewState extends State<ArticlePreView> {
                               ),
                             ),
                             TextSpan(
-                              text: timeAgo(article.published),
+                              text: widget.utils.timeAgo(article.published),
                               style: TextStyle(
-                                fontSize:
-                                    fontProvider.fontSettings.articleFontSize,
-                                fontFamily:
-                                    fontProvider.fontSettings.articleFont,
-                                fontVariations: const [
-                                  FontVariation('wght', 300)
-                                ],
+                                fontSize: fontProvider.fontSettings.articleFontSize,
+                                fontFamily: fontProvider.fontSettings.articleFont,
+                                fontVariations: const [FontVariation('wght', 300)],
                                 color: Color(themeProvider.theme.textColor),
                               ),
                             ),
@@ -139,8 +133,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
                       textSpan,
                       textAlign: fontProvider.fontSettings.articleAlignment,
                       style: TextStyle(
-                          height: fontProvider
-                              .fontSettings.articleLineSpacing, //line spacing
+                          height: fontProvider.fontSettings.articleLineSpacing, //line spacing
                           letterSpacing: 0, //letter spacing
                           fontSize: fontProvider.fontSettings.articleFontSize,
                           fontFamily: fontProvider.fontSettings.articleFont,
@@ -187,9 +180,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
             children.add(TextSpan(
               text: "${node.text}\n",
               style: const TextStyle(
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14),
+                  fontStyle: FontStyle.italic, fontWeight: FontWeight.w500, fontSize: 14),
             ));
             break;
           case 'em':
@@ -219,9 +210,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
             final url = node.attributes['href'];
             children.add(TextSpan(
               text: node.text,
-              style: TextStyle(
-                  color: Color(theme.primaryColor),
-                  decoration: TextDecoration.none),
+              style: TextStyle(color: Color(theme.primaryColor), decoration: TextDecoration.none),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
                   if (url != null) {
@@ -248,36 +237,31 @@ class _ArticlePreViewState extends State<ArticlePreView> {
               );
             }
             if (children.isEmpty ||
-                children.last is TextSpan &&
-                    !(children.last as TextSpan).text!.endsWith('\n')) {
+                children.last is TextSpan && !(children.last as TextSpan).text!.endsWith('\n')) {
               children.add(const TextSpan(text: '\n'));
             }
             break;
           case 'br':
             if (children.isEmpty ||
-                children.last is TextSpan &&
-                    !(children.last as TextSpan).text!.endsWith('\n')) {
+                children.last is TextSpan && !(children.last as TextSpan).text!.endsWith('\n')) {
               children.add(const TextSpan(text: '\n'));
             }
             break;
           case 'p':
             if (children.isEmpty ||
-                children.last is TextSpan &&
-                    !(children.last as TextSpan).text!.endsWith('\n')) {
+                children.last is TextSpan && !(children.last as TextSpan).text!.endsWith('\n')) {
               children.add(const TextSpan(text: '\n'));
             }
             children.addAll(_parseHtmlToTextSpan(node, theme).children!);
             if (children.isEmpty ||
-                children.last is TextSpan &&
-                    !(children.last as TextSpan).text!.endsWith('\n')) {
+                children.last is TextSpan && !(children.last as TextSpan).text!.endsWith('\n')) {
               children.add(const TextSpan(text: '\n'));
             }
             break;
           case 'span':
             children.addAll(_parseHtmlToTextSpan(node, theme).children!);
             if (children.isEmpty ||
-                children.last is TextSpan &&
-                    !(children.last as TextSpan).text!.endsWith('\n')) {
+                children.last is TextSpan && !(children.last as TextSpan).text!.endsWith('\n')) {
               children.add(const TextSpan(text: '\n'));
             }
             break;
@@ -291,8 +275,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
             children.add(
               TextSpan(
                 text: "${node.text}\n",
-                style: const TextStyle(
-                    fontStyle: FontStyle.normal, fontSize: 12.0),
+                style: const TextStyle(fontStyle: FontStyle.normal, fontSize: 12.0),
               ),
             );
           case 'li':
@@ -316,8 +299,6 @@ class _ArticlePreViewState extends State<ArticlePreView> {
       return const SizedBox();
       // return GestureDetector(
       //   onLongPress: () async {
-      //     //TODO
-      //     // _showBlurMenu(context);
       //   },
       //   child: Image.memory(Uint8List.fromList(imageBytes)),
       // );
@@ -329,6 +310,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
         },
         child: CachedNetworkImage(
           imageUrl: src,
+          cacheManager: widget.api.cacheManager,
           progressIndicatorBuilder: (context, url, downloadProgress) =>
               const CupertinoActivityIndicator(),
           errorWidget: (context, url, error) => const SizedBox(
@@ -343,26 +325,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
             popupImageCaption = alt;
           });
         },
-        // child: Image.network(
-        //   src,
-        //   errorBuilder: (context, exception, stackTrace) {
-        //     return const SizedBox(height: 40);
-        //   },
-        // ),
       );
     }
   }
 }
-
-final DecorationTween _tween = DecorationTween(
-  begin: BoxDecoration(
-    color: CupertinoColors.systemYellow,
-    boxShadow: const <BoxShadow>[],
-    borderRadius: BorderRadius.circular(20.0),
-  ),
-  end: BoxDecoration(
-    color: CupertinoColors.systemYellow,
-    boxShadow: CupertinoContextMenu.kEndBoxShadow,
-    borderRadius: BorderRadius.circular(20.0),
-  ),
-);

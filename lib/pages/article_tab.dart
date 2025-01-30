@@ -6,9 +6,11 @@ import 'package:feederr/models/local_feeds/local_feed.dart';
 import 'package:feederr/models/local_feeds/local_feedentry.dart';
 import 'package:feederr/models/categories/smart_categoryentry.dart';
 import 'package:feederr/models/categories/categoryentry.dart';
+import 'package:feederr/providers/local_feed_provider.dart';
+import 'package:feederr/providers/server_categories_provider.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:feederr/utils/utils.dart';
 import 'package:feederr/widgets/category.dart';
 import 'package:feederr/widgets/local_feed.dart';
@@ -18,19 +20,16 @@ import 'package:provider/provider.dart';
 
 class TabEntry extends StatefulWidget {
   final VoidCallback refreshParent;
-  final List<CategoryEntry> categories;
-  final List<LocalFeedEntry> localFeeds;
   final String path;
   final APIService api;
   final DatabaseService databaseService;
-  const TabEntry({
+  final AppUtils utils = AppUtils();
+  TabEntry({
     super.key,
     required this.refreshParent,
     required this.path,
-    required this.categories,
     required this.api,
     required this.databaseService,
-    required this.localFeeds,
   });
 
   @override
@@ -48,7 +47,8 @@ class _TabEntryState extends State<TabEntry> {
     super.initState();
   }
 
-  Future<void> _createSmartViews() async {
+  Future<void> _createSmartViews(
+      List<CategoryEntry> categories, List<LocalFeedEntry> localFeeds) async {
     smartCategories = [];
     List<Article> liTodayArticles = [];
     List<Article> liAllArticles = [];
@@ -56,12 +56,12 @@ class _TabEntryState extends State<TabEntry> {
     SmartCategoryEntry liAllFeedEntries;
     List<FeedEntry> tempTodayFeedEntries = [];
     List<FeedEntry> tempAllFeedEntries = [];
-    for (CategoryEntry categoryEntry in widget.categories) {
+    for (CategoryEntry categoryEntry in categories) {
       for (FeedEntry feedEntry in categoryEntry.feedEntry) {
         List<Article> tempTodayArticles = [];
         List<Article> tempAllArticles = [];
         for (Article article in feedEntry.articles) {
-          if (isWithin24Hours(article.published)) {
+          if (widget.utils.isWithin24Hours(article.published)) {
             liTodayArticles.add(article);
             tempTodayArticles.add(article);
           }
@@ -71,25 +71,21 @@ class _TabEntryState extends State<TabEntry> {
         if (tempTodayArticles.isNotEmpty) {
           tempTodayFeedEntries.add(
             FeedEntry(
-                feed: feedEntry.feed,
-                articles: tempTodayArticles,
-                count: tempTodayArticles.length),
+                feed: feedEntry.feed, articles: tempTodayArticles, count: tempTodayArticles.length),
           );
         }
         if (tempAllArticles.isNotEmpty) {
           tempAllFeedEntries.add(FeedEntry(
-              feed: feedEntry.feed,
-              articles: tempAllArticles,
-              count: tempAllArticles.length));
+              feed: feedEntry.feed, articles: tempAllArticles, count: tempAllArticles.length));
         }
       }
     }
-    for (LocalFeedEntry feedEntry in widget.localFeeds) {
+    for (LocalFeedEntry feedEntry in localFeeds) {
       List<Article> tempTodayArticles = [];
       List<Article> tempAllArticles = [];
       for (LocalArticle localArticle in feedEntry.articles) {
         Article article = localArticle.toArticle();
-        if (isWithin24Hours(article.published)) {
+        if (widget.utils.isWithin24Hours(article.published)) {
           liTodayArticles.add(article);
           tempTodayArticles.add(article);
         }
@@ -114,15 +110,11 @@ class _TabEntryState extends State<TabEntry> {
 
     if (tempAllFeedEntries.isNotEmpty) {
       liAllFeedEntries = SmartCategoryEntry(
-          title: "All Articles",
-          articles: liAllArticles,
-          feeds: tempAllFeedEntries);
+          title: "All Articles", articles: liAllArticles, feeds: tempAllFeedEntries);
       smartCategories.add(liAllFeedEntries);
       if (tempTodayFeedEntries.isNotEmpty) {
         liTodayFeedEntries = SmartCategoryEntry(
-            title: "Today",
-            articles: liTodayArticles,
-            feeds: tempTodayFeedEntries);
+            title: "Today", articles: liTodayArticles, feeds: tempTodayFeedEntries);
         smartCategories.add(liTodayFeedEntries);
       }
     }
@@ -130,123 +122,124 @@ class _TabEntryState extends State<TabEntry> {
 
   @override
   Widget build(BuildContext context) {
-    _createSmartViews();
-    return Selector<ThemeProvider, AppTheme>(
-        selector: (_, themeProvider) => themeProvider.theme,
-        builder: (_, theme, __) {
-          return RawScrollbar(
-            interactive: true,
-            thumbColor: Color(theme.primaryColor),
-            thickness: 2,
-            radius: const Radius.circular(2),
-            controller: _scrollController,
-            child: ScrollConfiguration(
-              behavior:
-                  ScrollConfiguration.of(context).copyWith(scrollbars: false),
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                slivers: <Widget>[
-                  CupertinoSliverRefreshControl(
-                    onRefresh: () async {
-                      widget.refreshParent();
-                    },
+    final localFeeds = Provider.of<LocalFeedsProvider>(context);
+    return Consumer<ServerCatogoriesProvider>(builder: (_, sCatogoriesProvider, __) {
+      _createSmartViews(sCatogoriesProvider.categoryEntries, localFeeds.feeds);
+      return Selector<ThemeProvider, AppTheme>(
+          selector: (_, themeProvider) => themeProvider.theme,
+          builder: (_, theme, __) {
+            return RawScrollbar(
+              interactive: true,
+              thumbColor: Color(theme.primaryColor),
+              thickness: 2,
+              radius: const Radius.circular(2),
+              controller: _scrollController,
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          child: smartCategories.isNotEmpty
-                              ? Text(
-                                  "SMART VIEWS",
-                                  style: TextStyle(
-                                    color: Color(theme.textColor),
-                                  ),
-                                )
-                              : Container(),
-                        ),
-                      ],
+                  slivers: <Widget>[
+                    CupertinoSliverRefreshControl(
+                      onRefresh: () async {
+                        widget.refreshParent();
+                      },
                     ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (BuildContext context, int index) =>
-                          SmartCategoryListItem(
-                        category: smartCategories[index],
-                        api: widget.api,
-                        databaseService: widget.databaseService,
-                        refreshAllCallback: widget.refreshParent,
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                        [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            child: smartCategories.isNotEmpty
+                                ? Text(
+                                    "SMART VIEWS",
+                                    style: TextStyle(
+                                      color: Color(theme.textColor),
+                                    ),
+                                  )
+                                : Container(),
+                          ),
+                        ],
                       ),
-                      childCount: smartCategories.length,
                     ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          child: widget.categories.isNotEmpty
-                              ? Text(
-                                  "FOLDERS",
-                                  style: TextStyle(
-                                    color: Color(theme.textColor),
-                                  ),
-                                )
-                              : Container(),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) => SmartCategoryListItem(
+                          category: smartCategories[index],
+                          api: widget.api,
+                          databaseService: widget.databaseService,
+                          refreshAllCallback: widget.refreshParent,
                         ),
-                      ],
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (BuildContext context, int index) => CategoryListItem(
-                        refreshAllCallback: widget.refreshParent,
-                        category: widget.categories[index],
-                        api: widget.api,
-                        databaseService: widget.databaseService,
+                        childCount: smartCategories.length,
                       ),
-                      childCount: widget.categories.length,
                     ),
-                  ),
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                        [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            child: sCatogoriesProvider.isNotEmpty
+                                ? Text(
+                                    "FOLDERS",
+                                    style: TextStyle(
+                                      color: Color(theme.textColor),
+                                    ),
+                                  )
+                                : Container(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) => CategoryListItem(
+                          refreshAllCallback: widget.refreshParent,
+                          category: sCatogoriesProvider.categoryEntries[index],
+                          api: widget.api,
+                          databaseService: widget.databaseService,
+                        ),
+                        childCount: sCatogoriesProvider.length,
+                      ),
+                    ),
 
-                  // Local Articles
-                  SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          child: widget.localFeeds.isNotEmpty
-                              ? Text(
-                                  "LOCAL FEEDS",
-                                  style: TextStyle(
-                                    color: Color(theme.textColor),
-                                  ),
-                                )
-                              : Container(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (BuildContext context, int index) => LocalFeedListItem(
-                        count: widget.localFeeds[index].articles.length,
-                        articles: widget.localFeeds[index].articles,
-                        feed: widget.localFeeds[index],
-                        api: widget.api,
-                        databaseService: widget.databaseService,
-                        callback: widget.refreshParent,
+                    // Local Articles
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                        [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            child: localFeeds.isNotEmpty
+                                ? Text(
+                                    "LOCAL FEEDS",
+                                    style: TextStyle(
+                                      color: Color(theme.textColor),
+                                    ),
+                                  )
+                                : Container(),
+                          ),
+                        ],
                       ),
-                      childCount: widget.localFeeds.length,
                     ),
-                  ),
-                ],
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) => LocalFeedListItem(
+                          count: localFeeds.feeds[index].articles.length,
+                          articles: localFeeds.feeds[index].articles,
+                          feed: localFeeds.feeds[index],
+                          api: widget.api,
+                          databaseService: widget.databaseService,
+                          callback: widget.refreshParent,
+                        ),
+                        childCount: localFeeds.length,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        });
+            );
+          });
+    });
   }
 }

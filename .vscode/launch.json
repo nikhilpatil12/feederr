@@ -8,7 +8,14 @@
             "deviceId": "RFCN70CLCJP"
         },
         {
-            "name": "Flutter Sim",
+            "name": "Flutter Android Sim",
+            "program": "lib/main.dart",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "emulator-5554"
+        },
+        {
+            "name": "Flutter iOS Sim",
             "program": "lib/main.dart",
             "request": "launch",
             "type": "dart",

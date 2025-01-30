@@ -5,20 +5,18 @@ import 'package:feederr/pages/settings/ai.dart';
 import 'package:feederr/pages/settings/appearance.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class Settings extends StatefulWidget {
-  const Settings({
+  Settings({
     super.key,
-    required this.databaseService,
-    required this.api,
   });
-  final DatabaseService databaseService;
-  final APIService api;
+  final DatabaseService databaseService = DatabaseService();
+  final APIService api = APIService();
 
   @override
   SettingsState createState() => SettingsState();
@@ -27,13 +25,37 @@ class Settings extends StatefulWidget {
 class SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     //TODO: Settings
-    return Consumer<ThemeProvider>(builder: (_, themeProvider, __) {
-      return ListView(
+    return Scaffold(
+      // extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
+        elevation: 0,
+        title: Text(
+          'Settings',
+          style: TextStyle(
+            color: Color(themeProvider.theme.textColor),
+          ),
+          overflow: TextOverflow.fade,
+        ),
+        // flexibleSpace: ClipRect(
+        //   child: BackdropFilter(
+        //     filter: ImageFilter.blur(
+        //       sigmaX: 36,
+        //       sigmaY: 36,
+        //     ),
+        //     child: Container(
+        //       color: Colors.transparent,
+        //     ),
+        //   ),
+        // ),
+      ),
+      body: ListView(
         scrollDirection: Axis.vertical,
         children: <Widget>[
           ListTile(
-            leading: const Icon(CupertinoIcons.person),
+            leading: const CircleAvatar(child: Icon(CupertinoIcons.person)),
             iconColor: Color(themeProvider.theme.textColor),
             textColor: Color(themeProvider.theme.textColor),
             title: const Text('Accounts'),
@@ -57,17 +79,17 @@ class SettingsState extends State<Settings> {
                           ),
                           overflow: TextOverflow.fade,
                         ),
-                        flexibleSpace: ClipRect(
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: 36,
-                              sigmaY: 36,
-                            ),
-                            child: Container(
-                              color: Colors.transparent,
-                            ),
-                          ),
-                        ),
+                        // flexibleSpace: ClipRect(
+                        //   child: BackdropFilter(
+                        //     filter: ImageFilter.blur(
+                        //       sigmaX: 36,
+                        //       sigmaY: 36,
+                        //     ),
+                        //     child: Container(
+                        //       color: Colors.transparent,
+                        //     ),
+                        //   ),
+                        // ),
                       ),
                       body: ServerList(
                         databaseService: widget.databaseService,
@@ -80,7 +102,7 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const Icon(CupertinoIcons.paintbrush),
+            leading: const CircleAvatar(child: Icon(CupertinoIcons.paintbrush)),
             title: const Text('Appearance'),
             trailing: const Icon(CupertinoIcons.right_chevron),
             iconColor: Color(themeProvider.theme.textColor),
@@ -91,40 +113,14 @@ class SettingsState extends State<Settings> {
                 context,
                 MaterialPageRoute(
                   builder: (BuildContext context) {
-                    return Scaffold(
-                      // extendBodyBehindAppBar: true,
-                      appBar: AppBar(
-                        backgroundColor: Color(themeProvider.theme.surfaceColor)
-                            .withAlpha(56),
-                        elevation: 0,
-                        title: Text(
-                          'Appearance',
-                          style: TextStyle(
-                            color: Color(themeProvider.theme.textColor),
-                          ),
-                          overflow: TextOverflow.fade,
-                        ),
-                        flexibleSpace: ClipRect(
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: 36,
-                              sigmaY: 36,
-                            ),
-                            child: Container(
-                              color: Colors.transparent,
-                            ),
-                          ),
-                        ),
-                      ),
-                      body: AppearanceSettings(),
-                    );
+                    return AppearanceSettings();
                   },
                 ),
               );
             },
           ),
           ListTile(
-            leading: const Icon(CupertinoIcons.cloud),
+            leading: const CircleAvatar(child: Icon(CupertinoIcons.cloud)),
             title: const Text('Backup'),
             trailing: const Icon(CupertinoIcons.right_chevron),
             iconColor: Color(themeProvider.theme.textColor),
@@ -134,7 +130,7 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const Icon(CupertinoIcons.sparkles),
+            leading: const CircleAvatar(child: Icon(CupertinoIcons.sparkles)),
             title: const Text('AI Summarization Settings'),
             trailing: const Icon(CupertinoIcons.right_chevron),
             iconColor: Color(themeProvider.theme.textColor),
@@ -158,17 +154,17 @@ class SettingsState extends State<Settings> {
                           ),
                           overflow: TextOverflow.fade,
                         ),
-                        flexibleSpace: ClipRect(
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: 36,
-                              sigmaY: 36,
-                            ),
-                            child: Container(
-                              color: Colors.transparent,
-                            ),
-                          ),
-                        ),
+                        // flexibleSpace: ClipRect(
+                        //   child: BackdropFilter(
+                        //     filter: ImageFilter.blur(
+                        //       sigmaX: 36,
+                        //       sigmaY: 36,
+                        //     ),
+                        //     child: Container(
+                        //       color: Colors.transparent,
+                        //     ),
+                        //   ),
+                        // ),
                       ),
                       body: AISettings(),
                     );
@@ -178,7 +174,7 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const Icon(CupertinoIcons.list_dash),
+            leading: const CircleAvatar(child: Icon(CupertinoIcons.list_dash)),
             title: const Text('List Styles'),
             trailing: const Icon(CupertinoIcons.right_chevron),
             iconColor: Color(themeProvider.theme.textColor),
@@ -188,7 +184,7 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.info_outline),
+            leading: const CircleAvatar(child: Icon(Icons.info_outline)),
             title: const Text('About'),
             trailing: const Icon(CupertinoIcons.right_chevron),
             iconColor: Color(themeProvider.theme.textColor),
@@ -198,8 +194,9 @@ class SettingsState extends State<Settings> {
             },
           ),
         ],
-      );
-      // return Text("dataaaa");
-    });
+      ),
+    );
+    // return Text("dataaaa");
+    // });
   }
 }

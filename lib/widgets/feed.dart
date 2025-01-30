@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:feederr/models/app_theme.dart';
 import 'package:feederr/models/article.dart';
@@ -5,10 +7,11 @@ import 'package:feederr/models/feedentry.dart';
 import 'package:feederr/pages/article_list.dart';
 import 'package:feederr/utils/apiservice.dart';
 import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/utils/providers/themeprovider.dart';
+import 'package:feederr/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
@@ -83,8 +86,7 @@ class FeedListItem extends StatefulWidget {
 }
 
 class _FeedListItemState extends State<FeedListItem> {
-  final ValueNotifier<BoxDecoration> _decorationNotifier =
-      ValueNotifier<BoxDecoration>(
+  final ValueNotifier<BoxDecoration> _decorationNotifier = ValueNotifier<BoxDecoration>(
     BoxDecoration(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(8),
@@ -185,7 +187,10 @@ class _FeedListItemState extends State<FeedListItem> {
                     child: child,
                   );
                 },
-                child: _FeedDetails(feed: widget.feed),
+                child: _FeedDetails(
+                  feed: widget.feed,
+                  api: widget.api,
+                ),
               ),
             ),
           );
@@ -194,9 +199,10 @@ class _FeedListItemState extends State<FeedListItem> {
 }
 
 class _FeedDetails extends StatelessWidget {
-  const _FeedDetails({required this.feed});
+  const _FeedDetails({required this.feed, required this.api});
 
   final FeedEntry feed;
+  final APIService api;
 
   @override
   Widget build(BuildContext context) {
@@ -204,8 +210,8 @@ class _FeedDetails extends StatelessWidget {
         selector: (_, themeProvider) => themeProvider.theme,
         builder: (_, theme, __) {
           return Padding(
-            padding: EdgeInsets.only(
-                left: MediaQuery.sizeOf(context).width / 10, top: 8, bottom: 8),
+            padding:
+                EdgeInsets.only(left: MediaQuery.sizeOf(context).width / 10, top: 8, bottom: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
@@ -213,8 +219,7 @@ class _FeedDetails extends StatelessWidget {
                   fit: FlexFit.tight,
                   child: FutureBuilder(
                     future: _loadImage(feed.feed.iconUrl),
-                    builder:
-                        (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                    builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Image.asset("assets/rss-16.png");
                       } else if (snapshot.hasError) {
@@ -228,15 +233,6 @@ class _FeedDetails extends StatelessWidget {
                     },
                   ),
                 ),
-                // CachedNetworkImage(
-                //   width: 20,
-                //   height: 20,
-                //   imageUrl: feed.feed.iconUrl,
-                //   progressIndicatorBuilder: (context, url, downloadProgress) =>
-                //       const CupertinoActivityIndicator(),
-                //   errorWidget: (context, url, error) =>
-                //       Image.asset("assets/rss-16.png"),
-                // ),
                 const Padding(padding: EdgeInsets.only(left: 10)),
                 Flexible(
                   flex: 10,
@@ -292,10 +288,10 @@ class _FeedDetails extends StatelessWidget {
             width: 20,
             height: 20,
             imageUrl: feed.feed.iconUrl,
+            cacheManager: api.cacheManager,
             progressIndicatorBuilder: (context, url, downloadProgress) =>
                 const CupertinoActivityIndicator(),
-            errorWidget: (context, url, error) =>
-                Image.asset("assets/rss-16.png"),
+            errorWidget: (context, url, error) => Image.asset("assets/rss-16.png"),
           );
         }
       } else {
@@ -309,8 +305,8 @@ class _FeedDetails extends StatelessWidget {
   }
 }
 
-void showFeed(BuildContext context, FeedEntry feed, APIService api,
-    DatabaseService databaseService, VoidCallback refreshAllCallback) {
+void showFeed(BuildContext context, FeedEntry feed, APIService api, DatabaseService databaseService,
+    VoidCallback refreshAllCallback) {
   HapticFeedback.mediumImpact();
   Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(

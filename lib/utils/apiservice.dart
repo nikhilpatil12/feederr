@@ -8,14 +8,26 @@ import 'package:feederr/models/tagged_id.dart';
 import 'package:feederr/models/unread.dart';
 import 'package:feederr/models/starred.dart';
 import 'package:feederr/models/tag.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class APIService {
+  // A private static instance of the class
+  static final APIService _instance = APIService._internal();
+
+  // Private constructor
+  APIService._internal()
+      : _dio = Dio(),
+        _cacheManager = DefaultCacheManager();
+
+  // Public factory constructor returns the same instance
+  factory APIService() {
+    return _instance;
+  }
   final Dio _dio;
+  final DefaultCacheManager _cacheManager;
+  DefaultCacheManager get cacheManager => _cacheManager;
 
-  APIService() : _dio = Dio();
-
-  Future<String> userLogin(
-      String baseUrl, String userName, String password) async {
+  Future<String> userLogin(String baseUrl, String userName, String password) async {
     try {
       // final encodedUsername = Uri.encodeComponent(userName);
       // final encodedPassword = Uri.encodeComponent(password);
@@ -234,8 +246,7 @@ class APIService {
     }
   }
 
-  Future<List<TaggedId>?> fetchTaggedIds(
-      String baseUrl, String auth, String tag) async {
+  Future<List<TaggedId>?> fetchTaggedIds(String baseUrl, String auth, String tag) async {
     try {
       var headers = {'Authorization': 'GoogleLogin auth=$auth'};
       var response = await _dio.request(
@@ -320,10 +331,11 @@ class APIService {
     }
   }
 
-  Future<String> markAsRead(String baseUrl, String? auth, int articleId) async {
+  Future<String> markIdsAsRead(String baseUrl, String? auth, List<int> itemIds) async {
     try {
       var headers = {'Authorization': 'GoogleLogin auth=$auth'};
-      var data = {'i': articleId, 'a': 'user/-/state/com.google/read'};
+      String data = itemIds.map((id) => 'i=$id').join('&');
+      data += '&a=user/-/state/com.google/read';
       var response = await _dio.request(
         '$baseUrl/reader/api/0/edit-tag',
         options: Options(
@@ -360,11 +372,11 @@ class APIService {
     }
   }
 
-  Future<String> markAsUnread(
-      String baseUrl, String? auth, int articleId) async {
+  Future<String> markAsUnread(String baseUrl, String? auth, List<int> itemIds) async {
     try {
       var headers = {'Authorization': 'GoogleLogin auth=$auth'};
-      var data = {'i': articleId, 'r': 'user/-/state/com.google/read'};
+      String data = itemIds.map((id) => 'i=$id').join('&');
+      data += '&r=user/-/state/com.google/read';
       var response = await _dio.request(
         '$baseUrl/reader/api/0/edit-tag',
         options: Options(
@@ -401,8 +413,7 @@ class APIService {
     }
   }
 
-  Future<String> markAsStarred(
-      String baseUrl, String? auth, int articleId) async {
+  Future<String> markAsStarred(String baseUrl, String? auth, int articleId) async {
     try {
       var headers = {'Authorization': 'GoogleLogin auth=$auth'};
       var data = {'i': articleId, 'a': 'user/-/state/com.google/starred'};
@@ -442,11 +453,52 @@ class APIService {
     }
   }
 
-  Future<String> markAsNotStarred(
-      String baseUrl, String? auth, int articleId) async {
+  Future<String> markIdsAsStarred(String baseUrl, String? auth, List<int> itemIds) async {
     try {
       var headers = {'Authorization': 'GoogleLogin auth=$auth'};
-      var data = {'i': articleId, 'r': 'user/-/state/com.google/starred'};
+      String data = itemIds.map((id) => 'i=$id').join('&');
+      data += '&a=user/-/state/com.google/starred';
+      var response = await _dio.request(
+        '$baseUrl/reader/api/0/edit-tag',
+        options: Options(
+          method: 'POST',
+          headers: headers,
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+        data: data,
+      );
+
+      if (response.statusCode == 200) {
+        log("OK");
+
+        return "OK";
+      } else {
+        log("Error: $response.statusMessage");
+        return "Error";
+      }
+    } on DioException catch (dioExcpetion) {
+      // Handle Dio specific errors
+      if (dioExcpetion.response != null) {
+        // log('DioError response: ${dioExcpetion.response?.data}');
+        // log('DioError status code: ${dioExcpetion.response?.statusCode}');
+        return "Error";
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        // log('DioError message: ${dioExcpetion.message}');
+        return "Error";
+      }
+    } catch (e) {
+      // Handle other errors
+      log('Request failed with error 7: $e');
+      return "Error";
+    }
+  }
+
+  Future<String> markAsNotStarred(String baseUrl, String? auth, List<int> itemIds) async {
+    try {
+      var headers = {'Authorization': 'GoogleLogin auth=$auth'};
+      String data = itemIds.map((id) => 'i=$id').join('&');
+      data += '&r=user/-/state/com.google/starred';
       var response = await _dio.request(
         '$baseUrl/reader/api/0/edit-tag',
         options: Options(
@@ -515,11 +567,7 @@ class APIService {
           "content":
               "You will be provided with a RSS article, along with it's title. Summarize the article in plain text."
         },
-        {
-          "role": "user",
-          "content":
-              "Title: ${article.title} Content: ${article.summaryContent}"
-        }
+        {"role": "user", "content": "Title: ${article.title} Content: ${article.summaryContent}"}
       ]
     });
     var dio = Dio();
@@ -540,5 +588,36 @@ class APIService {
       print(response.statusMessage);
       return "";
     }
+  }
+
+  Future<void> cacheImages(List<String> imageUrls) async {
+    //Precache images
+    // List<String> imageUrls = [];
+    // log("Urls: ${imageUrls.length}");
+
+    int found = 0;
+    int grabbed = 0;
+    for (String imageUrl in imageUrls) {
+      // Check if the file is already in the cache
+      final cachedFile = await _cacheManager.getFileFromCache(imageUrl);
+
+      if (cachedFile == null) {
+        // File is not in the cache, download it
+        try {
+          await _cacheManager.downloadFile(imageUrl);
+        } on Exception catch (e) {
+          log("Exception caching image:$imageUrl \n $e");
+        } catch (e) {
+          log("Error caching image:$e");
+        }
+        grabbed += 1;
+      } else {
+        // File is already cached
+        // log('File already cached: $imageUrl');
+        found += 1;
+      }
+    }
+    // }
+    log("Urls: ${imageUrls.length} Found: $found , GrabbedL $grabbed");
   }
 }
