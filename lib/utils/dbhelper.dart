@@ -1,18 +1,24 @@
-import 'package:feederr/models/categories/article_category.dart';
-import 'package:feederr/models/category.dart';
-import 'package:feederr/models/categories/feed_category.dart';
-import 'package:feederr/models/categories/categoryentry.dart';
-import 'package:feederr/models/feedentry.dart';
-import 'package:feederr/models/local_feeds/local_article.dart';
-import 'package:feederr/models/local_feeds/local_feed.dart';
-import 'package:feederr/models/local_feeds/rss_feeds.dart';
-import 'package:feederr/models/server.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/unread.dart';
-import 'package:feederr/models/starred.dart';
-import 'package:feederr/models/tag.dart';
-import 'package:feederr/models/feed.dart';
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:blazefeeds/models/categories/article_category.dart';
+import 'package:blazefeeds/models/category.dart';
+import 'package:blazefeeds/models/categories/feed_category.dart';
+import 'package:blazefeeds/models/categories/categoryentry.dart';
+import 'package:blazefeeds/models/feedentry.dart';
+import 'package:blazefeeds/models/local_feeds/local_article.dart';
+import 'package:blazefeeds/models/local_feeds/local_feed.dart';
+import 'package:blazefeeds/models/local_feeds/rss_feeds.dart';
+import 'package:blazefeeds/models/server.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/unread.dart';
+import 'package:blazefeeds/models/starred.dart';
+import 'package:blazefeeds/models/tag.dart';
+import 'package:blazefeeds/models/feed.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseService {
@@ -34,7 +40,7 @@ class DatabaseService {
     // Set the path to the database. Note: Using the `join` function from the
     // `path` package is best practice to ensure the path is correctly
     // constructed for each platform.
-    final path = join(databasePath, 'feederrdb.db');
+    final path = join(databasePath, 'blazefeedsdb.db');
 
     // Set the version. This executes the onCreate function and provides a
     // path to perform database upgrades and downgrades.
@@ -42,7 +48,7 @@ class DatabaseService {
       path,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
-      version: 4,
+      version: 5,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
@@ -51,7 +57,7 @@ class DatabaseService {
   // and a table to store UnreadIds.
   Future<void> _onCreate(Database db, int version) async {
     await db.execute(
-      'CREATE TABLE server_list(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT)',
+      'CREATE TABLE server_list(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT, baseUrl TEXT, userName TEXT, password TEXT, auth TEXT)',
     );
     await db.execute(
       'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)',
@@ -103,47 +109,11 @@ class DatabaseService {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < newVersion) {
-      // Version 2 adds a new table
-      // Check if the table exists
-      var result = await db
-          .rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="rss_feeds"');
+    if (oldVersion < 5) {
+      // Add the new column "server_type" as TEXT so that we can store the enum’s string value.
 
-      if (result.isEmpty) {
-        // Table doesn't exist, create it
-        await db.execute(
-          'CREATE TABLE rss_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, baseUrl TEXT)',
-        );
-      }
-      var result2 = await db
-          .rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="local_feeds"');
-
-      if (result2.isEmpty) {
-        // Table doesn't exist, create it
-        await db.execute(
-          'CREATE TABLE local_feeds(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, categories TEXT, url TEXT, htmlUrl TEXT, iconUrl TEXT, count INTEGER)',
-        );
-      }
-      var result3 = await db
-          .rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="local_articles"');
-
-      if (result3.isEmpty) {
-        await db.execute(
-          'CREATE TABLE local_articles(id TEXT, id2 INTEGER PRIMARY KEY AUTOINCREMENT, crawlTimeMsec TEXT, published int, title TEXT, canonical TEXT, alternate TEXT, categories TEXT, origin_title TEXT, summary_content TEXT, author TEXT, imageUrl TEXT, serverId INTEGER, FOREIGN KEY (serverId) REFERENCES local_feeds(id) ON DELETE CASCADE)',
-        );
-      }
-// Insert a "local" server record when the database is created
-      await db.insert(
-        'server_list',
-        {
-          'baseUrl': 'localhost', // Example base URL for local server
-          'userName': '', // Example username
-          'password': '', // Example password
-          'auth': '', // Example authentication type
-        },
-        conflictAlgorithm: ConflictAlgorithm
-            .replace, // Optional: Handle conflicts (e.g., replacing if the same server is already in the list)
-      );
+      await db.execute("ALTER TABLE server_list ADD COLUMN name TEXT");
+      await db.execute("ALTER TABLE server_list ADD COLUMN server_type TEXT");
     }
 
     // You can add more version checks and migrations here if necessary
@@ -234,6 +204,31 @@ class DatabaseService {
       return LocalFeed.fromDBMap(maps[0]);
     } else {
       return null;
+    }
+  }
+
+  Future<void> deleteLocalFeed(int feedId) async {
+    final db = await _databaseService.database;
+    try {
+      // Get the baseUrl of the feed to be deleted
+      final List<Map<String, dynamic>> feed = await db.query(
+        'local_feeds',
+        columns: ['url'],
+        where: 'id = ?',
+        whereArgs: [feedId],
+      );
+
+      if (feed.isNotEmpty) {
+        String baseUrl = feed.first['url'];
+
+        // Delete from local_feeds, associated articles will be deleted due to ON DELETE CASCADE
+        await db.delete('local_feeds', where: 'id = ?', whereArgs: [feedId]);
+
+        // Delete from rss_feeds based on baseUrl
+        await db.delete('rss_feeds', where: 'baseUrl = ?', whereArgs: [baseUrl]);
+      }
+    } catch (e) {
+      log('Error deleting feed: $e');
     }
   }
 

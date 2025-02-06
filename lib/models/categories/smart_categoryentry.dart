@@ -1,5 +1,5 @@
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feedentry.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/feedentry.dart';
 
 class SmartCategoryEntry {
   final String title;

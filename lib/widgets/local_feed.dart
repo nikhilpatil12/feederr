@@ -1,82 +1,81 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/local_feeds/local_article.dart';
-import 'package:feederr/models/local_feeds/local_feedentry.dart';
-import 'package:feederr/pages/article_list.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/local_feeds/local_article.dart';
+import 'package:blazefeeds/models/local_feeds/local_feedentry.dart';
+import 'package:blazefeeds/pages/article_list.dart';
+import 'package:blazefeeds/providers/individual_local_feed_provider.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-class LocalFeedListView extends StatefulWidget {
-  const LocalFeedListView({
-    super.key,
-    required this.feeds,
-    required this.articles,
-    required this.count,
-    required this.api,
-    required this.databaseService,
-    required this.refreshAllCallback,
-  });
+// class LocalFeedListView extends StatefulWidget {
+//   const LocalFeedListView({
+//     super.key,
+//     required this.feeds,
+//     // required this.articles,
+//     // required this.count,
+//     required this.api,
+//     required this.databaseService,
+//     required this.refreshAllCallback,
+//   });
 
-  final List<LocalFeedEntry> feeds;
-  final List<LocalArticle> articles;
-  final int count;
-  final APIService api;
-  final DatabaseService databaseService;
-  final VoidCallback refreshAllCallback;
+//   final List<LocalFeedEntry> feeds;
+//   // final List<LocalArticle> articles;
+//   // final int count;
+//   final APIService api;
+//   final DatabaseService databaseService;
+//   final VoidCallback refreshAllCallback;
 
-  @override
-  State<LocalFeedListView> createState() => _LocalFeedListViewState();
-}
+//   @override
+//   State<LocalFeedListView> createState() => _LocalFeedListViewState();
+// }
 
-class _LocalFeedListViewState extends State<LocalFeedListView> {
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(0),
-      itemCount: widget.feeds.length,
-      itemBuilder: (context, index) {
-        final feed = widget.feeds[index];
-        final articles = widget.articles;
-        final count = widget.count;
-        return LocalFeedListItem(
-          feed: feed,
-          articles: articles,
-          count: count,
-          api: widget.api,
-          databaseService: widget.databaseService,
-          callback: widget.refreshAllCallback,
-        );
-      },
-    );
-  }
-}
+// class _LocalFeedListViewState extends State<LocalFeedListView> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return ListView.builder(
+//       shrinkWrap: true,
+//       physics: const NeverScrollableScrollPhysics(),
+//       padding: const EdgeInsets.all(0),
+//       itemCount: widget.feeds.length,
+//       itemBuilder: (context, index) {
+//         final feed = widget.feeds[index];
+//         // final articles = widget.articles;
+//         // final count = widget.count;
+//         return LocalFeedListItem(
+//           feed: feed,
+//           // articles: articles,
+//           // count: count,
+//           api: widget.api,
+//           databaseService: widget.databaseService,
+//           callback: widget.refreshAllCallback,
+//         );
+//       },
+//     );
+//   }
+// }
 
 class LocalFeedListItem extends StatefulWidget {
   const LocalFeedListItem({
     super.key,
     required this.feed,
-    required this.articles,
-    required this.count,
+    // required this.articles,
+    // required this.count,
     required this.api,
     required this.databaseService,
     required this.callback,
   });
   final LocalFeedEntry feed;
-  final List<LocalArticle> articles;
-  final int count;
+  // final List<LocalArticle> articles;
+  // final int count;
   final APIService api;
   final DatabaseService databaseService;
   final VoidCallback callback;
@@ -87,100 +86,120 @@ class LocalFeedListItem extends StatefulWidget {
 
 class _LocalFeedListItemState extends State<LocalFeedListItem> {
   final ValueNotifier<Color> _colorNotifier = ValueNotifier<Color>(Colors.transparent);
+  late final AppUtils utils;
+
+  @override
+  void initState() {
+    super.initState();
+    utils = AppUtils();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ThemeProvider, AppTheme>(
-        selector: (_, themeProvider) => themeProvider.theme,
-        builder: (_, theme, __) {
-          return GestureDetector(
-              onTap: () => {
-                    showFeed(
-                      context,
-                      widget.feed,
-                      widget.api,
-                      widget.databaseService,
-                      widget.callback,
+    return Selector<LocalFeedsProvider, IndividualLocalFeedProvider>(
+        selector: (_, localFeedsProvider) =>
+            localFeedsProvider.getSingleFeedProvider(widget.feed.feedUrl.baseUrl),
+        builder: (_, localFeedProvider, __) {
+          return Selector<ThemeProvider, AppTheme>(
+            selector: (_, themeProvider) => themeProvider.theme,
+            builder: (_, theme, __) {
+              return localFeedProvider.feed.articles.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () => {
+                        showFeed(
+                          context,
+                          localFeedProvider.feed,
+                          widget.api,
+                          widget.databaseService,
+                          widget.callback,
+                        )
+                      },
+                      onTapDown: (tapDetails) => {
+                        _colorNotifier.value = Color(theme.primaryColor).withAlpha(90),
+                      },
+                      onTapUp: (tapDetails) => {
+                        Future.delayed(const Duration(milliseconds: 200), () {
+                          _colorNotifier.value = const Color.fromARGB(0, 0, 0, 0);
+                        })
+                      },
+                      onTapCancel: () => {
+                        Future.delayed(const Duration(milliseconds: 200), () {
+                          _colorNotifier.value = const Color.fromARGB(0, 0, 0, 0);
+                        })
+                      },
+                      child: Slidable(
+                        key: Key(localFeedProvider.feed.feedUrl.baseUrl),
+                        // Specify a key if the Slidable is dismissible.
+                        endActionPane: ActionPane(
+                          motion: const ScrollMotion(),
+                          children: [
+                            Theme(
+                              data: Theme.of(context).copyWith(
+                                outlinedButtonTheme: OutlinedButtonThemeData(
+                                  style: ButtonStyle(
+                                    iconColor: WidgetStatePropertyAll(
+                                      Color(theme.textColor),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              child: SlidableAction(
+                                onPressed: (_) => {
+                                  showFeed(context, localFeedProvider.feed, widget.api,
+                                      widget.databaseService, widget.callback),
+                                },
+                                backgroundColor: Color(theme.primaryColor).withAlpha(180),
+                                icon: CupertinoIcons.news,
+                              ),
+                            ),
+                            Theme(
+                              data: Theme.of(context).copyWith(
+                                outlinedButtonTheme: OutlinedButtonThemeData(
+                                  style: ButtonStyle(
+                                    iconColor: WidgetStatePropertyAll(
+                                      Color(theme.textColor),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              child: SlidableAction(
+                                onPressed: (_) => {
+                                  //TODO: DELETE FEED
+                                  widget.databaseService
+                                      .deleteLocalFeed(localFeedProvider.feed.feed.id ?? 0),
+                                },
+                                padding: EdgeInsets.all(10),
+                                backgroundColor: Colors.deepOrange,
+                                icon: CupertinoIcons.delete,
+                              ),
+                            ),
+                          ],
+                        ),
+                        child: ValueListenableBuilder<Color>(
+                          valueListenable: _colorNotifier,
+                          builder: (context, color, child) {
+                            return Container(
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: color,
+                                //   borderRadius: const BorderRadius.all(
+                                //     Radius.circular(10),
+                                // ),
+                              ),
+                              padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                              child: child,
+                            );
+                          },
+                          child: _FeedDetails(
+                            feed: localFeedProvider.feed,
+                            api: widget.api,
+                          ),
+                        ),
+                      ),
                     )
-                  },
-              onTapDown: (tapDetails) => {
-                    _colorNotifier.value = Color(theme.primaryColor).withAlpha(90),
-                  },
-              onTapUp: (tapDetails) => {
-                    Future.delayed(const Duration(milliseconds: 200), () {
-                      _colorNotifier.value = const Color.fromARGB(0, 0, 0, 0);
-                    })
-                  },
-              onTapCancel: () => {
-                    Future.delayed(const Duration(milliseconds: 200), () {
-                      _colorNotifier.value = const Color.fromARGB(0, 0, 0, 0);
-                    })
-                  },
-              child: Slidable(
-                // Specify a key if the Slidable is dismissible.
-                endActionPane: ActionPane(
-                  motion: const ScrollMotion(),
-                  children: [
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        outlinedButtonTheme: OutlinedButtonThemeData(
-                          style: ButtonStyle(
-                            iconColor: WidgetStatePropertyAll(
-                              Color(theme.textColor),
-                            ),
-                          ),
-                        ),
-                      ),
-                      child: SlidableAction(
-                        onPressed: (_) => {
-                          showFeed(context, widget.feed, widget.api, widget.databaseService,
-                              widget.callback),
-                        },
-                        backgroundColor: Color(theme.primaryColor).withAlpha(180),
-                        icon: CupertinoIcons.news,
-                      ),
-                    ),
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        outlinedButtonTheme: OutlinedButtonThemeData(
-                          style: ButtonStyle(
-                            iconColor: WidgetStatePropertyAll(
-                              Color(theme.textColor),
-                            ),
-                          ),
-                        ),
-                      ),
-                      child: SlidableAction(
-                        onPressed: (_) => {
-                          //TODO: DELETE FEED
-                        },
-                        padding: EdgeInsets.all(10),
-                        backgroundColor: Colors.deepOrange,
-                        icon: CupertinoIcons.delete,
-                      ),
-                    ),
-                  ],
-                ),
-                child: ValueListenableBuilder<Color>(
-                    valueListenable: _colorNotifier,
-                    builder: (context, color, child) {
-                      return Container(
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          color: color,
-                          //   borderRadius: const BorderRadius.all(
-                          //     Radius.circular(10),
-                          // ),
-                        ),
-                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                        child: child,
-                      );
-                    },
-                    child: _FeedDetails(
-                      feed: widget.feed,
-                      api: widget.api,
-                    )),
-              ));
+                  : Container();
+            },
+          );
         });
   }
 }
@@ -240,7 +259,7 @@ class _FeedDetails extends StatelessWidget {
                   child: Wrap(
                     children: [
                       Text(
-                        feed.count.toString(),
+                        feed.articles.length.toString(),
                         textAlign: TextAlign.right,
                         style: TextStyle(
                           color: Color(theme.primaryColor),
@@ -294,6 +313,10 @@ class _FeedDetails extends StatelessWidget {
   }
 }
 
+Future<void> onReturnToHome(LocalFeedsProvider localFeedsProvider, LocalFeedEntry feed) async {
+  localFeedsProvider.updateFeedProvider(feed.feedUrl.baseUrl, feed);
+}
+
 void showFeed(
   BuildContext context,
   LocalFeedEntry feed,
@@ -314,5 +337,9 @@ void showFeed(
         );
       },
     ),
-  );
+  ).then((_) {
+    // This will be called after Navigator.pop() on NextPage
+    LocalFeedsProvider localFeedsProvider = Provider.of<LocalFeedsProvider>(context, listen: false);
+    onReturnToHome(localFeedsProvider, feed);
+  });
 }

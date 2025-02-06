@@ -1,16 +1,17 @@
 import 'dart:developer';
 
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/server.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/server.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ServerForm extends StatefulWidget {
   final VoidCallback refreshParent;
+  final TextEditingController formNameController;
   final TextEditingController formUrlController;
   final TextEditingController formUsernameController;
   final TextEditingController formPasswordController;
@@ -19,6 +20,7 @@ class ServerForm extends StatefulWidget {
   const ServerForm({
     super.key,
     required this.refreshParent,
+    required this.formNameController,
     required this.formUrlController,
     required this.formUsernameController,
     required this.formPasswordController,
@@ -37,11 +39,12 @@ class ServerFormState extends State<ServerForm> {
 
   @override
   void dispose() {
+    super.dispose();
     // Clean up the controller when the widget is disposed.
     widget.formUrlController.dispose();
     widget.formUsernameController.dispose();
     widget.formPasswordController.dispose();
-    super.dispose();
+    // log("Form disposed");
   }
 
   @override
@@ -69,7 +72,26 @@ class ServerFormState extends State<ServerForm> {
                   Container(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Server Login ",
+                      "Name",
+                      textAlign: TextAlign.left,
+                    ),
+                  ),
+                  TextField(
+                    controller: widget.formNameController,
+                    minLines: 1,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelStyle: TextStyle(color: Color(theme.textColor).withAlpha(150)),
+                      floatingLabelBehavior: FloatingLabelBehavior.never,
+                      border:
+                          OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                      labelText: 'default',
+                    ),
+                  ),
+                  Container(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Server Login",
                       textAlign: TextAlign.left,
                     ),
                   ),
@@ -84,7 +106,6 @@ class ServerFormState extends State<ServerForm> {
                           OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                       labelText: 'http://yourserver.com/api/greader.php',
                     ),
-                    style: const TextStyle(color: Colors.white),
                   ),
                   Container(
                     alignment: Alignment.centerLeft,
@@ -129,6 +150,7 @@ class ServerFormState extends State<ServerForm> {
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
                           // Process data.
+                          final name = widget.formNameController.text;
                           final baseUrl = widget.formUrlController.text;
                           final userName = widget.formUsernameController.text;
                           Server? s1 = await widget.databaseService
@@ -163,6 +185,10 @@ class ServerFormState extends State<ServerForm> {
 
                             if (auth != '404') {
                               if (mounted) {
+                                widget.formNameController.clear();
+                                widget.formUrlController.clear();
+                                widget.formUsernameController.clear();
+                                widget.formPasswordController.clear();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: const Text('Server added'),
@@ -175,6 +201,8 @@ class ServerFormState extends State<ServerForm> {
                               }
                               widget.databaseService.insertServer(
                                 Server(
+                                    name: name,
+                                    type: 'freshrss',
                                     baseUrl: baseUrl,
                                     userName: userName,
                                     password: password,

@@ -1,12 +1,12 @@
 import 'dart:ui';
 
-import 'package:feederr/pages/settings/custom_theme.dart';
-import 'package:feederr/providers/font_provider.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/pages/settings/custom_theme.dart';
+import 'package:blazefeeds/providers/font_provider.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:feederr/widgets/theme_preview.dart';
-import 'package:feederr/models/app_theme.dart';
+import 'package:blazefeeds/widgets/theme_preview.dart';
+import 'package:blazefeeds/models/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
@@ -50,8 +50,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
       return Scaffold(
         // extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor:
-              Color(themeProvider.theme.surfaceColor).withAlpha(56),
+          backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
           elevation: 0,
           title: Text(
             'Appearance',
@@ -120,8 +119,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                               children: [
                                 ThemePreview(
                                   theme: AppTheme(
-                                    primaryColor:
-                                        themeProvider.theme.primaryColor,
+                                    primaryColor: themeProvider.theme.primaryColor,
                                     secondaryColor: 0xff000000,
                                     surfaceColor: 0xff000000,
                                     textColor: 0xffffffff,
@@ -134,8 +132,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                   child: Text(
                                     "Ultra Dark",
                                     style: TextStyle(
-                                      color:
-                                          Color(themeProvider.theme.textColor),
+                                      color: Color(themeProvider.theme.textColor),
                                     ),
                                   ),
                                 ),
@@ -171,8 +168,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                               children: [
                                 ThemePreview(
                                   theme: AppTheme(
-                                    primaryColor:
-                                        themeProvider.theme.primaryColor,
+                                    primaryColor: themeProvider.theme.primaryColor,
                                     secondaryColor: 0xff000000,
                                     surfaceColor: 0xff0f0f0f,
                                     textColor: 0xffffffff,
@@ -185,8 +181,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                   child: Text(
                                     "Dark",
                                     style: TextStyle(
-                                      color:
-                                          Color(themeProvider.theme.textColor),
+                                      color: Color(themeProvider.theme.textColor),
                                     ),
                                   ),
                                 ),
@@ -224,8 +219,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                               children: [
                                 ThemePreview(
                                     theme: AppTheme(
-                                  primaryColor:
-                                      themeProvider.theme.primaryColor,
+                                  primaryColor: themeProvider.theme.primaryColor,
                                   secondaryColor: 0xffffffff,
                                   surfaceColor: 0xffffffff,
                                   textColor: 0xff000000,
@@ -237,8 +231,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                   child: Text(
                                     "Light",
                                     style: TextStyle(
-                                      color:
-                                          Color(themeProvider.theme.textColor),
+                                      color: Color(themeProvider.theme.textColor),
                                     ),
                                   ),
                                 ),
@@ -260,8 +253,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                               // extendBodyBehindAppBar: true,
                               appBar: AppBar(
                                 backgroundColor:
-                                    Color(themeProvider.theme.surfaceColor)
-                                        .withAlpha(56),
+                                    Color(themeProvider.theme.surfaceColor).withAlpha(56),
                                 elevation: 0,
                                 title: Text(
                                   'Custom Theme',
@@ -437,15 +429,13 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                             onSelectFocus: false,
                             onSelect: () async {
                               // Wait for the dialog to return color selection result.
-                              final Color newColor =
-                                  await showColorPickerDialog(
+                              final Color newColor = await showColorPickerDialog(
                                 // The dialog needs a context, we pass it in.
                                 context,
                                 // We use the dialogSelectColor, as its starting color.
                                 Color(themeProvider.theme.primaryColor),
-                                title: Text('Colors',
-                                    style:
-                                        Theme.of(context).textTheme.titleLarge),
+                                title:
+                                    Text('Colors', style: Theme.of(context).textTheme.titleLarge),
                                 width: 40,
                                 height: 40,
                                 spacing: 0,
@@ -458,8 +448,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                 pickersEnabled: <ColorPickerType, bool>{
                                   ColorPickerType.wheel: true,
                                 },
-                                copyPasteBehavior:
-                                    const ColorPickerCopyPasteBehavior(
+                                copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                                   copyButton: true,
                                   pasteButton: true,
                                   longPressMenu: false,
@@ -470,13 +459,10 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                   dialogActionButtons: false,
                                 ),
                                 constraints: const BoxConstraints(
-                                    minHeight: 480,
-                                    minWidth: 300,
-                                    maxWidth: 300),
+                                    minHeight: 480, minWidth: 300, maxWidth: 300),
                               );
                               // themeProvider.theme.primaryColor = newColor.value;
-                              themeProvider.updateTheme(
-                                  'primaryColor', newColor.value32bit);
+                              themeProvider.updateTheme('primaryColor', newColor.value32bit);
                             }),
                       ),
                       // Container(
@@ -550,10 +536,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.titleFontSize =
-                                    double.parse((fontProvider
-                                                .fontSettings.titleFontSize -
-                                            0.5)
+                                fontProvider.fontSettings.titleFontSize = double.parse(
+                                    (fontProvider.fontSettings.titleFontSize - 0.5)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -577,11 +561,9 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           ),
                           onPressed: () async {
                             setState(() {
-                              fontProvider.fontSettings.titleFontSize =
-                                  double.parse(
-                                      (fontProvider.fontSettings.titleFontSize +
-                                              0.5)
-                                          .toStringAsFixed(2));
+                              fontProvider.fontSettings.titleFontSize = double.parse(
+                                  (fontProvider.fontSettings.titleFontSize + 0.5)
+                                      .toStringAsFixed(2));
                               // lineSpacing += 0.2;
                             });
                             // // await asyncPrefs.setDouble('titleFontSize',
@@ -620,8 +602,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   Container(
-                    decoration: fontProvider.fontSettings.titleAlignment ==
-                            TextAlign.left
+                    decoration: fontProvider.fontSettings.titleAlignment == TextAlign.left
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -633,8 +614,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     child: CupertinoButton(
                       onPressed: () async {
                         setState(() {
-                          fontProvider.fontSettings.titleAlignment =
-                              TextAlign.left;
+                          fontProvider.fontSettings.titleAlignment = TextAlign.left;
                         });
                         // // await asyncPrefs.setString('titleAlignment', 'left');
                       },
@@ -645,8 +625,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     ),
                   ),
                   Container(
-                    decoration: fontProvider.fontSettings.titleAlignment ==
-                            TextAlign.center
+                    decoration: fontProvider.fontSettings.titleAlignment == TextAlign.center
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -658,8 +637,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     child: CupertinoButton(
                       onPressed: () async {
                         setState(() {
-                          fontProvider.fontSettings.titleAlignment =
-                              TextAlign.center;
+                          fontProvider.fontSettings.titleAlignment = TextAlign.center;
                           // titleTextAlignment =
                           //     TextAlign.center;
                         });
@@ -672,8 +650,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     ),
                   ),
                   Container(
-                    decoration: fontProvider.fontSettings.titleAlignment ==
-                            TextAlign.right
+                    decoration: fontProvider.fontSettings.titleAlignment == TextAlign.right
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -685,8 +662,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     child: CupertinoButton(
                       onPressed: () async {
                         setState(() {
-                          fontProvider.fontSettings.titleAlignment =
-                              TextAlign.right;
+                          fontProvider.fontSettings.titleAlignment = TextAlign.right;
                           // titleTextAlignment =
                           //     TextAlign.right;
                         });
@@ -752,10 +728,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.articleFontSize =
-                                    double.parse((fontProvider
-                                                .fontSettings.articleFontSize -
-                                            0.5)
+                                fontProvider.fontSettings.articleFontSize = double.parse(
+                                    (fontProvider.fontSettings.articleFontSize - 0.5)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -779,10 +753,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.articleFontSize =
-                                    double.parse((fontProvider
-                                                .fontSettings.articleFontSize +
-                                            0.5)
+                                fontProvider.fontSettings.articleFontSize = double.parse(
+                                    (fontProvider.fontSettings.articleFontSize + 0.5)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -822,8 +794,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   Container(
-                    decoration: fontProvider.fontSettings.articleAlignment ==
-                            TextAlign.left
+                    decoration: fontProvider.fontSettings.articleAlignment == TextAlign.left
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -835,8 +806,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     child: CupertinoButton(
                       onPressed: () async {
                         setState(() {
-                          fontProvider.fontSettings.articleAlignment =
-                              TextAlign.left;
+                          fontProvider.fontSettings.articleAlignment = TextAlign.left;
                           // titleTextAlignment =
                           //     TextAlign.right;
                         });
@@ -849,8 +819,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     ),
                   ),
                   Container(
-                    decoration: fontProvider.fontSettings.articleAlignment ==
-                            TextAlign.center
+                    decoration: fontProvider.fontSettings.articleAlignment == TextAlign.center
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -862,8 +831,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     child: CupertinoButton(
                       onPressed: () async {
                         setState(() {
-                          fontProvider.fontSettings.articleAlignment =
-                              TextAlign.center;
+                          fontProvider.fontSettings.articleAlignment = TextAlign.center;
                         });
                         // await asyncPrefs.setString('articleAlignment', 'center');
                       },
@@ -874,8 +842,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     ),
                   ),
                   Container(
-                    decoration: fontProvider.fontSettings.articleAlignment ==
-                            TextAlign.right
+                    decoration: fontProvider.fontSettings.articleAlignment == TextAlign.right
                         ? BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -887,8 +854,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     child: CupertinoButton(
                       onPressed: () async {
                         setState(() {
-                          fontProvider.fontSettings.articleAlignment =
-                              TextAlign.right;
+                          fontProvider.fontSettings.articleAlignment = TextAlign.right;
                           // titleTextAlignment =
                           //     TextAlign.right;
                         });
@@ -940,10 +906,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.articleLineSpacing =
-                                    double.parse((fontProvider.fontSettings
-                                                .articleLineSpacing -
-                                            0.1)
+                                fontProvider.fontSettings.articleLineSpacing = double.parse(
+                                    (fontProvider.fontSettings.articleLineSpacing - 0.1)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -953,8 +917,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                         ),
                         SizedBox(
                             child: Text(
-                          (fontProvider.fontSettings.articleLineSpacing)
-                              .toStringAsFixed(2),
+                          (fontProvider.fontSettings.articleLineSpacing).toStringAsFixed(2),
                           style: TextStyle(
                             color: Color(themeProvider.theme.textColor),
                           ),
@@ -968,10 +931,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.articleLineSpacing =
-                                    double.parse((fontProvider.fontSettings
-                                                .articleLineSpacing +
-                                            0.1)
+                                fontProvider.fontSettings.articleLineSpacing = double.parse(
+                                    (fontProvider.fontSettings.articleLineSpacing + 0.1)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -994,8 +955,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(10),
-                        child: Icon(Icons.width_wide,
-                            color: Color(themeProvider.theme.textColor)),
+                        child: Icon(Icons.width_wide, color: Color(themeProvider.theme.textColor)),
                       ),
                       Text(
                         "Content Width",
@@ -1020,10 +980,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.articleContentWidth =
-                                    double.parse((fontProvider.fontSettings
-                                                .articleContentWidth -
-                                            5)
+                                fontProvider.fontSettings.articleContentWidth = double.parse(
+                                    (fontProvider.fontSettings.articleContentWidth - 5)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -1033,8 +991,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                         ),
                         SizedBox(
                             child: Text(
-                          (fontProvider.fontSettings.articleContentWidth)
-                              .toStringAsFixed(2),
+                          (fontProvider.fontSettings.articleContentWidth).toStringAsFixed(2),
                           style: TextStyle(
                             color: Color(themeProvider.theme.textColor),
                           ),
@@ -1048,10 +1005,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                           onPressed: () async {
                             setState(
                               () {
-                                fontProvider.fontSettings.articleContentWidth =
-                                    double.parse((fontProvider.fontSettings
-                                                .articleContentWidth +
-                                            5)
+                                fontProvider.fontSettings.articleContentWidth = double.parse(
+                                    (fontProvider.fontSettings.articleContentWidth + 5)
                                         .toStringAsFixed(2));
                               },
                             );
@@ -1108,8 +1063,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                             onTap: () async {
                               setState(
                                 () {
-                                  fontProvider.fontSettings.articleFont =
-                                      fonts[index];
+                                  fontProvider.fontSettings.articleFont = fonts[index];
                                   // fontFamily = fonts[index];
                                 },
                               );
@@ -1131,16 +1085,14 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                             onTap: () async {
                               setState(
                                 () {
-                                  fontProvider.fontSettings.articleFont =
-                                      fonts[index];
+                                  fontProvider.fontSettings.articleFont = fonts[index];
                                   // fontFamily = fonts[index];
                                 },
                               );
                               // await asyncPrefs.setString('articleFont',
                               // themeProvider.fontSettings.articleFont);
                             },
-                            child: fontProvider.fontSettings.articleFont ==
-                                    fonts[index]
+                            child: fontProvider.fontSettings.articleFont == fonts[index]
                                 ? Icon(
                                     Icons.check,
                                     color: Color(

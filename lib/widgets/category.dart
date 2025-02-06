@@ -1,11 +1,11 @@
 import 'dart:developer';
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/categories/categoryentry.dart';
-import 'package:feederr/pages/article_list.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/widgets/feed.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/categories/categoryentry.dart';
+import 'package:blazefeeds/pages/article_list.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/widgets/feed.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -106,11 +106,11 @@ class _CategoryListItemState extends State<CategoryListItem> with SingleTickerPr
               builder: (context, color, child) {
                 if (widget.category.count > 0) {
                   return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: color,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: child,
                   );
                 }
@@ -151,7 +151,7 @@ class _CategoryListItemState extends State<CategoryListItem> with SingleTickerPr
                         backgroundColor: Color(theme.primaryColor).withAlpha(180),
                         // foregroundColor: Colors.white,
                         icon: CupertinoIcons.news,
-                        // label: 'Delete',
+                        // label: 'Open',
                       ),
                     ),
                   ],
@@ -167,7 +167,7 @@ class _CategoryListItemState extends State<CategoryListItem> with SingleTickerPr
                   dense: true,
                   enabled: false,
                   shape: Border.all(color: Colors.transparent),
-                  tilePadding: const EdgeInsets.all(0),
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 20),
                   maintainState: true,
                   trailing: Padding(
                     padding: const EdgeInsets.only(left: 10, bottom: 10, top: 10),
@@ -266,13 +266,16 @@ class _CategoryListItemState extends State<CategoryListItem> with SingleTickerPr
                     ],
                   ),
                   children: <Widget>[
-                    FeedListView(
-                      articles: widget.category.articles,
-                      feeds: widget.category.feedEntry,
-                      count: widget.category.count,
-                      api: widget.api,
-                      databaseService: widget.databaseService,
-                      refreshAllCallback: widget.refreshAllCallback,
+                    Container(
+                      alignment: Alignment.center,
+                      child: FeedListView(
+                        articles: widget.category.articles,
+                        feeds: widget.category.feedEntry,
+                        count: widget.category.count,
+                        api: widget.api,
+                        databaseService: widget.databaseService,
+                        refreshAllCallback: widget.refreshAllCallback,
+                      ),
                     ),
                   ],
                 ),

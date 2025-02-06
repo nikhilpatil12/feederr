@@ -1,5 +1,5 @@
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feed.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/feed.dart';
 
 class FeedEntry {
   final Feed feed;

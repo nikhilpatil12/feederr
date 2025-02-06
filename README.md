@@ -1,6 +1,6 @@
-# Feederr
+# Blaze Feeds
 
-Feederr is a Flutter-based RSS feed reader that allows users to manage and view articles from multiple RSS servers. It supports persistent storage of feeds, articles, and metadata like unread and starred items.
+Blaze Feeds is a Flutter-based RSS feed reader that allows users to manage and view articles from multiple RSS servers. It supports persistent storage of feeds, articles, and metadata like unread and starred items.
 
 ## Features
 

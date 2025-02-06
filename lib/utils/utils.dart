@@ -1,5 +1,9 @@
 import 'dart:developer';
 
+import 'package:blazefeeds/providers/status_provider.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart';
 import 'package:intl/intl.dart';
 
@@ -15,8 +19,7 @@ class AppUtils {
     final then = DateTime.fromMillisecondsSinceEpoch(timestampInMs * 1000);
     final difference = now.difference(then);
 
-    final inMinutes =
-        difference.inMinutes % 60; // Use max to avoid negative values
+    final inMinutes = difference.inMinutes % 60; // Use max to avoid negative values
     final inHours = difference.inHours % 24;
     final inDays = difference.inDays;
 
@@ -25,9 +28,7 @@ class AppUtils {
     } else if (inHours > 0) {
       return inHours == 1 ? "$inHours hour ago" : "$inHours hours ago";
     } else {
-      return inMinutes == 1
-          ? "$inMinutes minute ago"
-          : "$inMinutes minutes ago";
+      return inMinutes == 1 ? "$inMinutes minute ago" : "$inMinutes minutes ago";
     }
   }
 
@@ -127,8 +128,7 @@ class AppUtils {
       try {
         final dateFormat = DateFormat(format, 'en_US');
         final dateTime = dateFormat.parseUtc(dateString);
-        return dateTime.millisecondsSinceEpoch ~/
-            1000; // Convert to Unix timestamp
+        return dateTime.millisecondsSinceEpoch ~/ 1000; // Convert to Unix timestamp
       } catch (_) {
         // Ignore and try the next format
       }
@@ -159,5 +159,9 @@ class AppUtils {
 
     // Convert the hexadecimal string to an integer
     return int.parse(hexPart, radix: 16);
+  }
+
+  void showStatus(BuildContext context, String newStatus) async {
+    Provider.of<StatusProvider>(context, listen: false).updateStatus(newStatus);
   }
 }

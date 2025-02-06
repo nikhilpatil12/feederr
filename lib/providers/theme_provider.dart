@@ -1,12 +1,12 @@
 import 'dart:developer';
 
-import 'package:feederr/models/app_theme.dart';
+import 'package:blazefeeds/models/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
   AppTheme _theme;
-  late SharedPreferences _prefs;
+  late final SharedPreferences _prefs;
 
   ThemeProvider._internal(this._theme, this._prefs);
 

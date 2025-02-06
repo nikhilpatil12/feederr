@@ -1,5 +1,5 @@
 import 'dart:developer';
-import 'package:feederr/models/font_settings.dart';
+import 'package:blazefeeds/models/font_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -80,13 +80,11 @@ class FontProvider extends ChangeNotifier {
         break;
       case 'titleAlignment':
         await _prefs.setString('titleAlignment', value);
-        _fontSettings =
-            _fontSettings.copyWith(titleAlignment: _getAlignment(value));
+        _fontSettings = _fontSettings.copyWith(titleAlignment: _getAlignment(value));
         break;
       case 'articleAlignment':
         await _prefs.setString('articleAlignment', value);
-        _fontSettings =
-            _fontSettings.copyWith(articleAlignment: _getAlignment(value));
+        _fontSettings = _fontSettings.copyWith(articleAlignment: _getAlignment(value));
         break;
       default:
         log('unknownn');

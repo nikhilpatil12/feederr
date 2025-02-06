@@ -1,17 +1,14 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feedentry.dart';
-import 'package:feederr/pages/article_list.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/feedentry.dart';
+import 'package:blazefeeds/pages/article_list.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
@@ -45,7 +42,7 @@ class _FeedListViewState extends State<FeedListView> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(0),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       itemCount: widget.feeds.length,
       itemBuilder: (context, index) {
         final feed = widget.feeds[index];
@@ -210,8 +207,12 @@ class _FeedDetails extends StatelessWidget {
         selector: (_, themeProvider) => themeProvider.theme,
         builder: (_, theme, __) {
           return Padding(
-            padding:
-                EdgeInsets.only(left: MediaQuery.sizeOf(context).width / 10, top: 8, bottom: 8),
+            padding: EdgeInsets.only(
+              left: MediaQuery.sizeOf(context).width / 10,
+              top: 8,
+              bottom: 8,
+              right: 10,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[

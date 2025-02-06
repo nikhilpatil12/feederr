@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:feederr/models/app_theme.dart';
+import 'package:blazefeeds/models/app_theme.dart';
 import 'package:flutter/widgets.dart';
 
 class MiniThemePreview extends StatefulWidget {

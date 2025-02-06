@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feed.dart';
-import 'package:feederr/models/tagged_id.dart';
-import 'package:feederr/models/unread.dart';
-import 'package:feederr/models/starred.dart';
-import 'package:feederr/models/tag.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/feed.dart';
+import 'package:blazefeeds/models/tagged_id.dart';
+import 'package:blazefeeds/models/unread.dart';
+import 'package:blazefeeds/models/starred.dart';
+import 'package:blazefeeds/models/tag.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class APIService {
@@ -581,11 +581,11 @@ class APIService {
     );
 
     if (response.statusCode == 200) {
-      print("OK");
-      print(json.encode(response.data));
+      log("OK");
+      log(json.encode(response.data));
       return json.encode(response.data);
     } else {
-      print(response.statusMessage);
+      log(response.statusMessage ?? "");
       return "";
     }
   }
@@ -606,9 +606,11 @@ class APIService {
         try {
           await _cacheManager.downloadFile(imageUrl);
         } on Exception catch (e) {
-          log("Exception caching image:$imageUrl \n $e");
+          // log("Exception caching image:$imageUrl \n $e");
+          continue;
         } catch (e) {
-          log("Error caching image:$e");
+          // log("Error caching image:$e");
+          continue;
         }
         grabbed += 1;
       } else {

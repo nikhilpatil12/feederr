@@ -1,6 +1,6 @@
 import 'dart:developer';
-import 'package:feederr/providers/api_provider.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/providers/api_provider.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -53,11 +53,18 @@ class AISettingsState extends State<AISettings> {
               child: ListView(
                 scrollDirection: Axis.vertical,
                 children: [
-                  CupertinoTextField(
+                  TextField(
+                    decoration: InputDecoration(
+                      labelStyle:
+                          TextStyle(color: Color(themeProvider.theme.textColor).withAlpha(150)),
+                      floatingLabelBehavior: FloatingLabelBehavior.never,
+                      border:
+                          OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                      labelText: 'default',
+                    ),
                     obscureText: true,
                     focusNode: FocusNode(),
-                    style:
-                        TextStyle(color: Color(themeProvider.theme.textColor)),
+                    style: TextStyle(color: Color(themeProvider.theme.textColor)),
                     controller: _controller,
                     onSubmitted: (String value) async {
                       log(value);

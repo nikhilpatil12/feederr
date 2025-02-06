@@ -1,54 +1,55 @@
 import 'dart:convert';
 import 'dart:core';
 import 'dart:developer';
+import 'dart:ui';
 import 'package:dart_rss/dart_rss.dart';
-import 'package:dart_rss/domain/rss1_item.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feed.dart';
-import 'package:feederr/models/categories/categoryentry.dart';
-import 'package:feederr/models/local_feeds/local_article.dart';
-import 'package:feederr/models/local_feeds/local_feed.dart';
-import 'package:feederr/models/local_feeds/local_feedentry.dart';
-import 'package:feederr/models/local_feeds/rss_feeds.dart';
-import 'package:feederr/models/tagged_id.dart';
-import 'package:feederr/models/unread.dart';
-import 'package:feederr/models/server.dart';
-import 'package:feederr/models/starred.dart';
-import 'package:feederr/models/tag.dart';
-import 'package:feederr/pages/add_server.dart';
-import 'package:feederr/pages/article_tab.dart';
-import 'package:feederr/providers/local_feed_provider.dart';
-import 'package:feederr/providers/server_categories_provider.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/utils/utils.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/feed.dart';
+import 'package:blazefeeds/models/categories/categoryentry.dart';
+import 'package:blazefeeds/models/local_feeds/local_article.dart';
+import 'package:blazefeeds/models/local_feeds/local_feed.dart';
+import 'package:blazefeeds/models/local_feeds/local_feedentry.dart';
+import 'package:blazefeeds/models/local_feeds/rss_feeds.dart';
+import 'package:blazefeeds/models/tagged_id.dart';
+import 'package:blazefeeds/models/unread.dart';
+import 'package:blazefeeds/models/server.dart';
+import 'package:blazefeeds/models/starred.dart';
+import 'package:blazefeeds/models/tag.dart';
+import 'package:blazefeeds/pages/settings/add_server.dart';
+import 'package:blazefeeds/pages/article_tab.dart';
+import 'package:blazefeeds/providers/individual_local_feed_provider.dart';
+import 'package:blazefeeds/providers/server_categories_provider.dart';
+import 'package:blazefeeds/providers/status_provider.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
+import 'package:blazefeeds/widgets/status.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
-import 'package:feederr/pages/settings.dart';
-import 'package:feederr/models/app_theme.dart';
+import 'package:blazefeeds/pages/settings.dart';
+import 'package:blazefeeds/models/app_theme.dart';
 import 'package:provider/provider.dart';
 
-bool isWebLoading = false;
-bool isLocalDBLoading = false;
-bool isLocalFeedLoading = false;
-String status = "";
+// bool isWebLoading = false;
+// bool isLocalDBLoading = false;
+// bool isLocalFeedLoading = false;
 
 class HomeScreen extends StatefulWidget {
-  HomeScreen({
+  const HomeScreen({
     super.key,
   });
-  final APIService api = APIService();
-  final DatabaseService databaseService = DatabaseService();
-  final AppUtils utils = AppUtils();
   @override
   HomeScreenState createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late final APIService api;
+  late final DatabaseService databaseService;
+  late final AppUtils utils;
   List<Feed> dbFeeds = [];
   List<Tag> dbTags = [];
   List<UnreadId> dbUnreadIds = [];
@@ -62,381 +63,184 @@ class HomeScreenState extends State<HomeScreen> {
   ServerCatogoriesProvider allServerCatogoriesProvider = ServerCatogoriesProvider.createEmpty();
   ServerCatogoriesProvider newServerCatogoriesProvider = ServerCatogoriesProvider.createEmpty();
   ServerCatogoriesProvider favServerCatogoriesProvider = ServerCatogoriesProvider.createEmpty();
-  LocalFeedsProvider allFeedsProvider = LocalFeedsProvider.createEmpty();
-  LocalFeedsProvider newFeedsProvider = LocalFeedsProvider.createEmpty();
-  LocalFeedsProvider favFeedsProvider = LocalFeedsProvider.createEmpty();
+  // List<IndividualLocalFeedProvider> allFeedsProvider = [];
+  // List<IndividualLocalFeedProvider> newFeedsProvider = [];
+  // List<IndividualLocalFeedProvider> favFeedsProvider = [];
+  late LocalFeedsProvider allFeedsProvider;
+  late LocalFeedsProvider newFeedsProvider;
+  late LocalFeedsProvider favFeedsProvider;
   List<LocalFeedEntry> localFavFeeds = [];
   List<LocalFeedEntry> localNewFeeds = [];
   List<LocalFeedEntry> localAllFeeds = [];
   Set<String> liImagesToCache = {};
 
-  void showStatus(String newStatus) async {
-    status = newStatus;
-    setState(() {
-      status = newStatus;
-    });
-  }
+  late final AnimationController _animationController;
+  final MenuController _menuController = MenuController();
+  bool initialBuild = true;
 
   void refreshFeeds() async {
     liImagesToCache = {};
     log("Refreshing feeds");
+    if (!initialBuild) {
+      utils.showStatus(context, "Syncing feeds");
+    }
     await _fetchDBServerFeeds();
     await _fetchLocalFeedList();
     await _fetchServerFeeds();
     await _fetchDBServerFeeds();
-    // TODO: remove the comment below
-    await _cacheImages();
     log("Images to cache: ${liImagesToCache.length}");
-    // log("Unique Images to cache: ${liImagesToCache.toSet().length}");
+    await _cacheImages();
     log("Refreshed feeds");
-    // setState(() {});
+    utils.showStatus(context, "");
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
   void initState() {
-    super.initState();
-    isWebLoading = true;
-    isLocalDBLoading = true;
-    isLocalFeedLoading = true;
+    allFeedsProvider = LocalFeedsProvider();
+    newFeedsProvider = LocalFeedsProvider();
+    favFeedsProvider = LocalFeedsProvider();
+    api = APIService();
+    databaseService = DatabaseService();
+    utils = AppUtils();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    )..addStatusListener((AnimationStatus status) {
+        if (status == AnimationStatus.dismissed) {
+          // The moment the menu is closed, it will no longer be on the screen or animatable.
+          // To allow for a closing animation, we wait until our closing animation is finished before
+          // we close the menu anchor.
+          _menuController.close();
+        } else if (!_menuController.isOpen) {
+          // The menu should be open while the animation status is forward, completed, or reverse
+          _menuController.open();
+        }
+      });
+
+    // isWebLoading = true;
+    // isLocalDBLoading = true;
+    // isLocalFeedLoading = true;
     // _fetchDBServerFeeds();
     // _fetchLocalFeedList();
     // _fetchServerFeeds();
     // _cacheImages();
     refreshFeeds();
+    initialBuild = false;
+    super.initState();
   }
 
   Future<void> _fetchLocalFeedList() async {
     localAllFeeds = [];
     localNewFeeds = [];
     localFavFeeds = [];
-    // await databaseService
-    //     .insertRssFeed(RssFeed(baseUrl: 'https://www.billboard.com/feed/'));
-    // List<RssFeedUrl> feedList = await databaseService.rssFeeds();
-    List<RssFeedUrl> feedList = [
-      RssFeedUrl(baseUrl: 'https://www.theverge.com/rss/index.xml'),
-      RssFeedUrl(baseUrl: 'https://www.billboard.com/feed/'),
-      // RssFeedUrl(
-      //     baseUrl:
-      //         'https://lorem-rss.herokuapp.com/feed?unit=second&interval=30'),
-      // RssFeedUrl(
-      //     baseUrl: 'http://feeds.bbci.co.uk/news/world/asia/india/rss.xml'),
-      // RssFeedUrl(baseUrl: 'https://www.bhaskar.com/rss-feed/1061/'),
-      RssFeedUrl(baseUrl: 'https://maharashtratimes.com/rssfeedsdefault.cms'),
-      // RssFeedUrl(baseUrl: 'https://www.loksatta.com/desh-videsh/feed/'),
-    ];
+    List<RssFeedUrl> feedList = await databaseService.rssFeeds();
     for (RssFeedUrl feed in feedList) {
-      LocalFeed? localFeed = await widget.databaseService.localFeedByUrl(feed.baseUrl);
-      try {
-        var response = await widget.api.fetchLocalFeedContents(feed.baseUrl);
-        if (response.statusCode == 200) {
-          // print(json.encode(response.data));
-          // try{
-          String feedType = widget.utils.detectFeedFormat(response.data);
-          switch (feedType) {
-            case "RSS 2.0":
-              try {
-                final channel = RssFeed.parse(response.data);
-                if (localFeed == null) {
-                  await widget.databaseService.insertLocalFeed(
-                    LocalFeed(
-                        title: channel.title ?? feed.id.toString(),
-                        categories: channel.categories.toString(),
-                        url: feed.baseUrl,
-                        htmlUrl: channel.link ?? "",
-                        iconUrl: channel.image?.url ?? "",
-                        count: channel.items.length),
-                  );
-                  localFeed = await widget.databaseService.localFeedByUrl(feed.baseUrl);
-                  liImagesToCache.add(localFeed?.iconUrl ?? "");
-                  // widget.api.cacheImages();
-                }
-                for (RssItem item in channel.items) {
-                  LocalArticle? article =
-                      await widget.databaseService.localArticle(item.guid ?? "");
-                  if (article == null) {
-                    int id = await widget.databaseService.insertLocalArticle(
-                      LocalArticle(
-                        id: item.guid,
-                        originTitle: localFeed!.title,
-                        crawlTimeMsec: DateTime.now().millisecondsSinceEpoch.toString(),
-                        serverId: localFeed.id ?? 0,
-                        published: widget.utils.convertDateToGReader(item.pubDate ?? ""),
-                        title: item.title ?? "",
-                        canonical: item.link ?? "",
-                        alternate: "",
-                        categories: item.categories.toString(),
-                        summaryContent: item.content?.value ?? "",
-                        author: item.author ?? "",
-                        imageUrl: item.content != null
-                            ? item.content!.images.isNotEmpty
-                                ? item.content!.images.first
-                                : ""
-                            : "",
-                        isLocal: true,
-                        isRead: false,
-                        isStarred: false,
-                      ),
-                    );
-                    // print(resp);
-                    await widget.databaseService
-                        .insertUnreadId(UnreadId(articleId: id, serverId: 0));
-                  }
-                }
-              } catch (e) {
-                log("RSS2 Feed Error:$e");
-              }
-              break;
-            case "RSS 1.0":
-              try {
-                final channel = Rss1Feed.parse(response.data);
-                // LocalFeed? localFeed =
-                //     await widget.databaseService.localFeedByUrl(feed.baseUrl);
-                if (localFeed == null) {
-                  await widget.databaseService.insertLocalFeed(LocalFeed(
-                      title: channel.title ?? feed.id.toString(),
-                      categories: channel.dc?.subjects.toString() ?? "",
-                      url: feed.baseUrl,
-                      htmlUrl: channel.link ?? "",
-                      iconUrl: channel.image ?? "",
-                      count: channel.items.length));
-                  localFeed = await widget.databaseService.localFeedByUrl(feed.baseUrl);
-                }
-                for (Rss1Item item in channel.items) {
-                  LocalArticle? article =
-                      await widget.databaseService.localArticle(item.dc?.identifier ?? "");
-                  if (article == null) {
-                    int id = await widget.databaseService.insertLocalArticle(
-                      LocalArticle(
-                        id: item.dc?.identifier,
-                        originTitle: localFeed!.title,
-                        crawlTimeMsec: DateTime.now().millisecondsSinceEpoch.toString(),
-                        serverId: localFeed.id ?? 0,
-                        published: widget.utils.convertDateToGReader(item.dc?.date ?? ""),
-                        title: item.title ?? "",
-                        canonical: item.link ?? "",
-                        alternate: "",
-                        categories: widget.utils
-                            .castToListOfStrings(item.dc?.subjects.toString())
-                            .toString(),
-                        summaryContent: item.content?.value ?? "",
-                        author: item.dc?.creator ?? "",
-                        imageUrl: item.content!.images.isNotEmpty ? item.content!.images.first : "",
-                        isLocal: true,
-                        isRead: false,
-                        isStarred: false,
-                      ),
-                    );
-                    // print(resp);
-                    await widget.databaseService
-                        .insertUnreadId(UnreadId(articleId: id, serverId: 0));
-                  }
-                }
-                // List<LocalArticle> allArticles = await widget.databaseService
-                //     .localArticlesByLocalFeed(localFeed!);
-                // localAllFeeds.add(LocalFeedEntry(
-                //     feed: localFeed,
-                //     articles: allArticles,
-                //     count: allArticles.length));
-                // List<LocalArticle> newArticles = await widget.databaseService
-                //     .localUnreadArticlesByLocalFeed(localFeed);
-                // if (newArticles.isNotEmpty) {
-                //   localNewFeeds.add(
-                //     LocalFeedEntry(
-                //       feed: localFeed,
-                //       articles: newArticles,
-                //       count: newArticles.length,
-                //     ),
-                //   );
-                // }
-                // List<LocalArticle> starredArticles = await widget
-                //     .databaseService
-                //     .localStarredArticlesByLocalFeed(localFeed);
-                // if (starredArticles.isNotEmpty) {
-                //   localFavFeeds.add(
-                //     LocalFeedEntry(
-                //       feed: localFeed,
-                //       articles: starredArticles,
-                //       count: starredArticles.length,
-                //     ),
-                //   );
-                // }
-              } catch (e) {
-                log("RSS1 Feed Error:$e");
-              }
-              break;
-            case "Atom":
-              try {
-                final channel = AtomFeed.parse(response.data);
-                // LocalFeed? localFeed =
-                //     await widget.databaseService.localFeedByUrl(feed.baseUrl);
-                if (localFeed == null) {
-                  await widget.databaseService.insertLocalFeed(LocalFeed(
-                      title: channel.title ?? feed.id.toString(),
-                      categories: channel.categories.toString(),
-                      url: feed.baseUrl,
-                      htmlUrl: channel.links.first.href ?? "",
-                      iconUrl: channel.icon ?? "",
-                      count: channel.items.length));
-                  localFeed = await widget.databaseService.localFeedByUrl(feed.baseUrl);
-                }
-                for (AtomItem item in channel.items) {
-                  try {
-                    LocalArticle? article =
-                        await widget.databaseService.localArticle(item.id ?? "");
-                    if (article == null) {
-                      var document = parse(item.content);
-                      String imageUrl = "";
-                      List<dynamic> images = document.getElementsByTagName("img");
-                      if (images.isNotEmpty) {
-                        bool firstImageSet = false;
-                        for (var img in images) {
-                          if (img.attributes.containsKey("src") &&
-                              !img.attributes['src']!.startsWith('data:image')) {
-                            // widget.api.cacheImages(imageUrl);
-                            liImagesToCache.add(img.attributes['src']!);
-                            if (!firstImageSet) {
-                              imageUrl = img.attributes['src']!;
-                              firstImageSet = true; // Mark the first image as set
-                            }
-                          }
-                        }
-                      }
-                      int id = await widget.databaseService.insertLocalArticle(
-                        LocalArticle(
-                          id: item.id,
-                          crawlTimeMsec: DateTime.now().millisecondsSinceEpoch.toString(),
-                          originTitle: localFeed!.title,
-                          serverId: localFeed.id ?? 0,
-                          published: widget.utils.convertDateToGReader(item.published ?? ""),
-                          title: item.title ?? "",
-                          canonical: item.links.first.href ?? "",
-                          alternate: "",
-                          categories: item.categories
-                                  ?.map((category) => category.term ?? "")
-                                  .toList()
-                                  .toString() ??
-                              [].toString(),
-                          summaryContent: item.content ?? "",
-                          author: item.authors.first.name ?? "",
-                          imageUrl: item.media?.thumbnails.isNotEmpty ?? true
-                              ? item.media?.thumbnails.first.url ?? ""
-                              : imageUrl,
-                          isLocal: true,
-                          isRead: false,
-                          isStarred: false,
-                        ),
-                      );
-                      // print(resp);
-                      await widget.databaseService
-                          .insertUnreadId(UnreadId(articleId: id, serverId: 0));
-                    }
-                  } catch (e) {
-                    log("$e");
-                  }
-                }
-                // List<LocalArticle> allArticles = await widget.databaseService
-                //     .localArticlesByLocalFeed(localFeed!);
-                // localAllFeeds.add(
-                //   LocalFeedEntry(
-                //       feed: localFeed,
-                //       articles: allArticles,
-                //       count: allArticles.length),
-                // );
-                // List<LocalArticle> newArticles = await widget.databaseService
-                //     .localUnreadArticlesByLocalFeed(localFeed);
-                // if (newArticles.isNotEmpty) {
-                //   localNewFeeds.add(
-                //     LocalFeedEntry(
-                //       feed: localFeed,
-                //       articles: newArticles,
-                //       count: newArticles.length,
-                //     ),
-                //   );
-                // }
-                // List<LocalArticle> starredArticles = await widget
-                //     .databaseService
-                //     .localStarredArticlesByLocalFeed(localFeed);
-                // if (starredArticles.isNotEmpty) {
-                //   localFavFeeds.add(
-                //     LocalFeedEntry(
-                //       feed: localFeed,
-                //       articles: starredArticles,
-                //       count: starredArticles.length,
-                //     ),
-                //   );
-                // }
-              } catch (e) {
-                log("Atom Feed Error:$e");
-              }
-              break;
-            default:
-              break;
-          }
-        } else {
-          log("Error: ${response.statusMessage}");
+      LocalFeed? localFeed = await databaseService.localFeedByUrl(feed.baseUrl);
+      if (localFeed != null) {
+        List<LocalArticle> allArticles = await databaseService.localArticlesByLocalFeed(localFeed);
+        // localAllFeeds.add(
+        //   LocalFeedEntry(
+        //     feed: localFeed,
+        //     feedUrl: feed,
+        //     articles: allArticles,
+        //     count: allArticles.length,
+        //   ),
+        // );
+        allFeedsProvider.addFeedProvider(
+          feed.baseUrl,
+          IndividualLocalFeedProvider(
+              feedEntry: LocalFeedEntry(
+                feed: localFeed,
+                feedUrl: feed,
+                articles: allArticles,
+                // count: allArticles.length,
+              ),
+              path: "all"),
+        );
+
+        List<LocalArticle> newArticles =
+            await databaseService.localUnreadArticlesByLocalFeed(localFeed);
+        if (newArticles.isNotEmpty || allArticles.isEmpty) {
+          localNewFeeds.add(
+            LocalFeedEntry(
+              feed: localFeed,
+              feedUrl: feed,
+              articles: newArticles,
+              // count: newArticles.length,
+            ),
+          );
+          newFeedsProvider.addFeedProvider(
+            feed.baseUrl,
+            IndividualLocalFeedProvider(
+                feedEntry: LocalFeedEntry(
+                  feed: localFeed,
+                  feedUrl: feed,
+                  articles: newArticles,
+                  // count: allArticles.length,
+                ),
+                path: 'new'),
+          );
         }
-      } on Exception catch (e) {
-        log("Local feed fetching failure: $e");
-      }
-      List<LocalArticle> allArticles =
-          await widget.databaseService.localArticlesByLocalFeed(localFeed!);
-      localAllFeeds.add(
-        LocalFeedEntry(
-          feed: localFeed,
-          articles: allArticles,
-          count: allArticles.length,
-        ),
-      );
-      List<LocalArticle> newArticles =
-          await widget.databaseService.localUnreadArticlesByLocalFeed(localFeed);
-      if (newArticles.isNotEmpty) {
-        localNewFeeds.add(
-          LocalFeedEntry(
-            feed: localFeed,
-            articles: newArticles,
-            count: newArticles.length,
-          ),
-        );
-      }
-      List<LocalArticle> starredArticles =
-          await widget.databaseService.localStarredArticlesByLocalFeed(localFeed);
-      if (starredArticles.isNotEmpty) {
-        localFavFeeds.add(
-          LocalFeedEntry(
-            feed: localFeed,
-            articles: starredArticles,
-            count: starredArticles.length,
-          ),
-        );
+        List<LocalArticle> starredArticles =
+            await databaseService.localStarredArticlesByLocalFeed(localFeed);
+        if (starredArticles.isNotEmpty) {
+          localFavFeeds.add(
+            LocalFeedEntry(
+              feed: localFeed,
+              feedUrl: feed,
+              articles: starredArticles,
+              // count: starredArticles.length,
+            ),
+          );
+
+          favFeedsProvider.addFeedProvider(
+            feed.baseUrl,
+            IndividualLocalFeedProvider(
+              feedEntry: LocalFeedEntry(
+                feed: localFeed,
+                feedUrl: feed,
+                articles: allArticles,
+                // count: allArticles.length,
+              ),
+              path: 'fav',
+            ),
+          );
+        }
       }
     }
 
-    allFeedsProvider.updateCategories(localAllFeeds);
-    newFeedsProvider.updateCategories(localNewFeeds);
-    favFeedsProvider.updateCategories(localFavFeeds);
-    setState(() {
-      isLocalFeedLoading = false;
-    });
+    // allFeedsProvider.add(IndividualLocalFeedProvider(localAllFeeds));
+    // newFeedsProvider.updateCategories(localNewFeeds);
+    // favFeedsProvider.updateCategories(localFavFeeds);
+    // setState(() {
+    //   isLocalFeedLoading = false;
+    // });
   }
 
   Future<void> _fetchDBServerFeeds() async {
     favCategoryEntries = [];
     allCategoryEntries = [];
     newCategoryEntries = [];
-    List<Server> serverList = await widget.databaseService.servers();
+    List<Server> serverList = await databaseService.servers();
 
     if (serverList.isNotEmpty) {
       for (Server server in serverList) {
         if (server.baseUrl != "localhost") {
           int serverId = server.id ?? 0;
           favCategoryEntries
-              .addAll(await widget.databaseService.getCategoryEntriesWithStarredArticles(serverId));
-          allCategoryEntries.addAll(await widget.databaseService.getAllCategoryEntries(serverId));
+              .addAll(await databaseService.getCategoryEntriesWithStarredArticles(serverId));
+          allCategoryEntries.addAll(await databaseService.getAllCategoryEntries(serverId));
           newCategoryEntries
-              .addAll(await widget.databaseService.getCategoryEntriesWithNewArticles(serverId));
-          setState(() {
-            isLocalDBLoading = false;
-          });
+              .addAll(await databaseService.getCategoryEntriesWithNewArticles(serverId));
+          // setState(() {
+          //   isLocalDBLoading = false;
+          // });
         }
       }
     }
@@ -448,7 +252,7 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchServerFeeds() async {
     try {
       //Getting Server list
-      List<Server> serverList = await widget.databaseService.servers();
+      List<Server> serverList = await databaseService.servers();
 
       if (serverList.isNotEmpty) {
         for (Server server in serverList) {
@@ -460,23 +264,23 @@ class HomeScreenState extends State<HomeScreen> {
             int serverId = server.id ?? 0;
             if (auth == '') {
               // Login and set the auth token
-              auth = await widget.api.userLogin(baseUrl, userName, password);
+              auth = await api.userLogin(baseUrl, userName, password);
             }
-            showStatus("Fetching feeds");
+            utils.showStatus(context, "Fetching feeds");
             //Getting feedlist from server(s)
-            List<Feed> feedList = await widget.api.fetchFeedList(baseUrl, auth) ?? [];
-            dbFeeds = await widget.databaseService.feedsByServerId(serverId);
+            List<Feed> feedList = await api.fetchFeedList(baseUrl, auth) ?? [];
+            dbFeeds = await databaseService.feedsByServerId(serverId);
 
-            dbTags = await widget.databaseService.tagsForServer(serverId);
-            dbUnreadIds = await widget.databaseService.unreadIdsForServer(serverId);
-            dbStarredIds = await widget.databaseService.starredIdsForServer(serverId);
-            dbArticles = await widget.databaseService.articlesForServer(serverId);
+            dbTags = await databaseService.tagsForServer(serverId);
+            dbUnreadIds = await databaseService.unreadIdsForServer(serverId);
+            dbStarredIds = await databaseService.starredIdsForServer(serverId);
+            dbArticles = await databaseService.articlesForServer(serverId);
 
             // favCategoryEntries.addAll(
-            //     await widget.databaseService.getCategoryEntriesWithStarredArticles(serverId));
-            // allCategoryEntries.addAll(await widget.databaseService.getAllCategoryEntries(serverId));
+            //     await databaseService.getCategoryEntriesWithStarredArticles(serverId));
+            // allCategoryEntries.addAll(await databaseService.getAllCategoryEntries(serverId));
             // newCategoryEntries
-            //     .addAll(await widget.databaseService.getCategoryEntriesWithNewArticles(serverId));
+            //     .addAll(await databaseService.getCategoryEntriesWithNewArticles(serverId));
             // setState(() {
             //   isLocalDBLoading = false;
             // });
@@ -484,7 +288,7 @@ class HomeScreenState extends State<HomeScreen> {
             for (Feed feed in feedList) {
               //saving to DB
               feed.serverId = serverId;
-              Feed? dF = await widget.databaseService.feedByServerAndFeedId(serverId, feed.id);
+              Feed? dF = await databaseService.feedByServerAndFeedId(serverId, feed.id);
               if (dF == null) {
                 // if (feed.iconUrl.length < 5) {
                 //   final response = await dio.get(feed.htmlUrl);
@@ -500,19 +304,19 @@ class HomeScreenState extends State<HomeScreen> {
                 //   }
                 //   feed.iconUrl = iconUrl ?? "";
                 // }
-                await widget.databaseService.insertFeed(feed);
+                await databaseService.insertFeed(feed);
               }
             }
-            dbFeeds = await widget.databaseService.feedsByServerId(serverId);
+            dbFeeds = await databaseService.feedsByServerId(serverId);
             //Removing old feeds from db
             if (dbFeeds.isNotEmpty) {
               for (Feed feed in dbFeeds) {
                 if (feedList.where((x) => x.id == feed.id && x.serverId == serverId).isEmpty) {
-                  await widget.databaseService.deleteFeed(feed.id);
+                  await databaseService.deleteFeed(feed.id);
                 }
               }
             }
-            dbFeeds = await widget.databaseService.feedsByServerId(serverId);
+            dbFeeds = await databaseService.feedsByServerId(serverId);
             for (Feed feed in dbFeeds) {
               List<String> categories = [];
               var feedCategories = jsonDecode(feed.categories);
@@ -524,11 +328,11 @@ class HomeScreenState extends State<HomeScreen> {
                   }
                 }
               }
-              await widget.databaseService.insertFeedWithCategories(feed, categories);
+              await databaseService.insertFeedWithCategories(feed, categories);
             }
-            showStatus("Fetching folders");
+            utils.showStatus(context, "Fetching folders");
             //Getting taglist from server(s)
-            List<Tag> tagList = await widget.api.fetchTagList(baseUrl, auth) ?? [];
+            List<Tag> tagList = await api.fetchTagList(baseUrl, auth) ?? [];
             //add new tags from server(s)
             for (Tag tag in tagList) {
               //saving to DB
@@ -537,23 +341,23 @@ class HomeScreenState extends State<HomeScreen> {
                 if (dbTags.isEmpty ||
                     (dbTags.isNotEmpty &&
                         dbTags.where((x) => x.id == tag.id && x.serverId == serverId).isEmpty)) {
-                  await widget.databaseService.insertTag(tag);
+                  await databaseService.insertTag(tag);
                 }
               }
             }
-            dbTags = await widget.databaseService.tagsForServer(serverId);
+            dbTags = await databaseService.tagsForServer(serverId);
             //Removing old tags from db
             if (dbTags.isNotEmpty) {
               for (Tag tag in dbTags) {
                 if (tagList.where((x) => x.id == tag.id && x.serverId == serverId).isEmpty) {
-                  await widget.databaseService.deleteTag(tag.id);
+                  await databaseService.deleteTag(tag.id);
                 }
               }
             }
-            dbTags = await widget.databaseService.tagsForServer(serverId);
-            showStatus("Fetching unread items");
+            dbTags = await databaseService.tagsForServer(serverId);
+            utils.showStatus(context, "Fetching unread items");
             //Get Unread/New Ids
-            List<UnreadId> unreadIds = await widget.api.fetchUnreadIds(baseUrl, auth) ?? [];
+            List<UnreadId> unreadIds = await api.fetchUnreadIds(baseUrl, auth) ?? [];
             //Saving newids to db
             for (UnreadId id in unreadIds) {
               //saving to DB
@@ -563,10 +367,10 @@ class HomeScreenState extends State<HomeScreen> {
                       dbUnreadIds
                           .where((x) => x.articleId == id.articleId && x.serverId == serverId)
                           .isEmpty)) {
-                await widget.databaseService.insertUnreadId(id);
+                await databaseService.insertUnreadId(id);
               }
             }
-            dbUnreadIds = await widget.databaseService.unreadIdsForServer(serverId);
+            dbUnreadIds = await databaseService.unreadIdsForServer(serverId);
             //Removing old ids from db
             if (dbUnreadIds.isNotEmpty) {
               for (UnreadId id in dbUnreadIds) {
@@ -574,18 +378,18 @@ class HomeScreenState extends State<HomeScreen> {
                   if (unreadIds
                       .where((x) => x.articleId == id.articleId && x.serverId == serverId)
                       .isEmpty) {
-                    await widget.databaseService.deleteUnreadId(id.articleId);
+                    await databaseService.deleteUnreadId(id.articleId);
                   }
                 }
               }
             }
-            dbUnreadIds = await widget.databaseService.unreadIdsForServer(serverId);
+            dbUnreadIds = await databaseService.unreadIdsForServer(serverId);
 
             //Add missing IDs from database to the API query sring
             List<String> missingIds = [];
             for (UnreadId unreadId in dbUnreadIds) {
               int id = unreadId.articleId;
-              Article? a = await widget.databaseService.article(id);
+              Article? a = await databaseService.article(id);
               if (a == null) {
                 // missingIds += "i=$id&";
                 missingIds.add(id.toString());
@@ -593,12 +397,12 @@ class HomeScreenState extends State<HomeScreen> {
             }
 
             for (Tag tag in dbTags) {
-              List<TaggedId>? taggedIds = await widget.api.fetchTaggedIds(baseUrl, auth, tag.id);
+              List<TaggedId>? taggedIds = await api.fetchTaggedIds(baseUrl, auth, tag.id);
               //Adding new tagged article ids to db
               if (taggedIds != null && taggedIds.isNotEmpty) {
                 for (TaggedId taggedId in taggedIds) {
                   int id = taggedId.articleId;
-                  Article? a = await widget.databaseService.article(id);
+                  Article? a = await databaseService.article(id);
                   if (a == null) {
                     missingIds.add(id.toString());
                   }
@@ -607,7 +411,7 @@ class HomeScreenState extends State<HomeScreen> {
             }
             // _showOverlay("Fetching new articles...");
             //Get starred Ids
-            List<StarredId> newStarredIds = await widget.api.fetchStarredIds(baseUrl, auth) ?? [];
+            List<StarredId> newStarredIds = await api.fetchStarredIds(baseUrl, auth) ?? [];
             //Saving new starred ids to db
             for (StarredId id in newStarredIds) {
               //saving to DB
@@ -617,10 +421,10 @@ class HomeScreenState extends State<HomeScreen> {
                       dbStarredIds
                           .where((x) => x.articleId == id.articleId && x.serverId == serverId)
                           .isEmpty)) {
-                await widget.databaseService.insertStarredId(id);
+                await databaseService.insertStarredId(id);
               }
             }
-            dbStarredIds = await widget.databaseService.starredIdsForServer(serverId);
+            dbStarredIds = await databaseService.starredIdsForServer(serverId);
             //Removing old ids from db
             if (dbStarredIds.isNotEmpty) {
               for (StarredId id in dbStarredIds) {
@@ -628,25 +432,25 @@ class HomeScreenState extends State<HomeScreen> {
                   if (newStarredIds
                       .where((x) => x.articleId == id.articleId && x.serverId == serverId)
                       .isEmpty) {
-                    await widget.databaseService.deleteStarredId(id.articleId);
+                    await databaseService.deleteStarredId(id.articleId);
                   }
                 }
               }
             }
-            dbStarredIds = await widget.databaseService.starredIdsForServer(serverId);
+            dbStarredIds = await databaseService.starredIdsForServer(serverId);
             for (StarredId starred in dbStarredIds) {
               int id = starred.articleId;
-              Article? a = await widget.databaseService.article(id);
+              Article? a = await databaseService.article(id);
               if (a == null) {
                 missingIds.add(id.toString());
               }
             }
 
-            showStatus("Fetching all articles");
+            utils.showStatus(context, "Fetching all articles");
             //Fetch and insert new article contents
             if (missingIds.isNotEmpty) {
               List<Article> newArticles =
-                  await widget.api.fetchNewArticleContents(baseUrl, auth, missingIds) ?? [];
+                  await api.fetchNewArticleContents(baseUrl, auth, missingIds) ?? [];
               for (Article newArticle in newArticles) {
                 var document = parse(newArticle.summaryContent);
                 List<dynamic> images = document.getElementsByTagName("img");
@@ -656,7 +460,7 @@ class HomeScreenState extends State<HomeScreen> {
                     if (img.attributes.containsKey("src") &&
                         !img.attributes['src']!.startsWith('data:image')) {
                       String imageUrl = img.attributes['src']!;
-                      // widget.api.cacheImages(newArticle.imageUrl);
+                      // api.cacheImages(newArticle.imageUrl);
                       liImagesToCache.add(imageUrl);
                       if (!firstImageSet) {
                         newArticle.imageUrl = imageUrl;
@@ -665,7 +469,7 @@ class HomeScreenState extends State<HomeScreen> {
                     }
                   }
                 }
-                Feed feed = await widget.databaseService.feed(newArticle.originStreamId);
+                Feed feed = await databaseService.feed(newArticle.originStreamId);
                 newArticle.feedId = feed.id2 ?? 0;
                 newArticle.serverId = serverId;
                 newArticle.id2 = int.parse(newArticle.id!.split("/").last, radix: 16);
@@ -676,12 +480,11 @@ class HomeScreenState extends State<HomeScreen> {
                         dbArticles
                             .where((x) => x.id == newArticle.id && x.serverId == serverId)
                             .isEmpty)) {
-                  // widget.databaseService.insertArticle(newArticle);
+                  // databaseService.insertArticle(newArticle);
 
                   List<String> articleCategories =
-                      widget.utils.castToListOfStrings(jsonDecode(newArticle.categories));
-                  await widget.databaseService
-                      .insertArticleWithCategories(newArticle, articleCategories);
+                      utils.castToListOfStrings(jsonDecode(newArticle.categories));
+                  await databaseService.insertArticleWithCategories(newArticle, articleCategories);
                 }
               }
             }
@@ -692,47 +495,43 @@ class HomeScreenState extends State<HomeScreen> {
       // Handle error
       log("Server feed Error");
     } finally {
-      // List<Server> serverList = await widget.databaseService.servers();
+      // List<Server> serverList = await databaseService.servers();
       // favCategoryEntries = [];
       // newCategoryEntries = [];
       // allCategoryEntries = [];
       // if (serverList.isNotEmpty) {
       //   for (Server server in serverList) {
       //     if (server.baseUrl != "localhost") {
-      //       showStatus("Fetching all articles.");
+      //       utils.showStatus(context, "Fetching all articles.");
       //       favCategoryEntries.addAll(
-      //           await widget.databaseService.getCategoryEntriesWithStarredArticles(server.id ?? 0));
-      //       showStatus("Fetching all articles..");
+      //           await databaseService.getCategoryEntriesWithStarredArticles(server.id ?? 0));
+      //       utils.showStatus(context, "Fetching all articles..");
       //       newCategoryEntries.addAll(
-      //           await widget.databaseService.getCategoryEntriesWithNewArticles(server.id ?? 0));
-      //       showStatus("Fetching all articles...");
+      //           await databaseService.getCategoryEntriesWithNewArticles(server.id ?? 0));
+      //       utils.showStatus(context, "Fetching all articles...");
       //       allCategoryEntries
-      //           .addAll(await widget.databaseService.getAllCategoryEntries(server.id ?? 0));
-      showStatus("");
+      //           .addAll(await databaseService.getAllCategoryEntries(server.id ?? 0));
+      utils.showStatus(context, "");
       //     }
       //   }
-      setState(() {
-        // isLocalDBLoading = false;
-        isWebLoading = false;
-      });
+      // setState(() {
+      //   // isLocalDBLoading = false;
+      //   isWebLoading = false;
+      // });
     }
   }
 
   Future<void> _cacheImages() async {
-    setState(() {
-      status = "Caching Images";
-    });
-    await widget.api.cacheImages(liImagesToCache.toList());
+    utils.showStatus(context, "Caching Images");
+    await api.cacheImages(liImagesToCache.toList());
     liImagesToCache = {};
-    setState(() {
-      status = "";
-    });
+    utils.showStatus(context, "");
   }
 
   @override
   Widget build(BuildContext context) {
-    PersistentTabController controller;
-    controller = PersistentTabController(initialIndex: 1);
+    PersistentTabController tabController;
+    tabController = PersistentTabController(initialIndex: 1);
 
     return Selector<ThemeProvider, AppTheme>(
         selector: (_, themeProvider) => themeProvider.theme,
@@ -740,70 +539,120 @@ class HomeScreenState extends State<HomeScreen> {
           return Scaffold(
             appBar: AppBar(
               title: Text(
-                "Feederr",
+                "Blaze Feeds",
                 style: TextStyle(
                   color: Color(theme.primaryColor),
                 ),
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(10.0),
-                child: status != ""
-                    ? (Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Text(status),
-                        CupertinoActivityIndicator(
-                          color: Color(theme.primaryColor),
-                          radius: 10,
-                        ),
-                      ]))
-                    : Container(),
+                child: Status(),
               ),
               actions: <Widget>[
-                IconButton(
-                  color: Color(theme.primaryColor),
-                  icon: const Icon(CupertinoIcons.add),
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onPressed: () => {
-                    HapticFeedback.mediumImpact(),
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (BuildContext context) {
-                          return Scaffold(
-                            // extendBodyBehindAppBar: true,
-                            appBar: AppBar(
-                              backgroundColor: Color(theme.surfaceColor).withAlpha(56),
-                              elevation: 0,
-                              title: Text(
-                                'Accounts',
-                                style: TextStyle(
-                                  color: Color(theme.textColor),
+                MenuAnchor(
+                  controller: _menuController,
+                  onClose: _animationController.reset,
+                  onOpen: _animationController.forward,
+                  style: MenuStyle(
+                      shape: WidgetStatePropertyAll(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+                      side: WidgetStatePropertyAll(
+                        BorderSide(color: Color(theme.textColor).withAlpha(50)),
+                      ),
+                      elevation: WidgetStatePropertyAll(0),
+                      padding: WidgetStatePropertyAll(EdgeInsets.zero)),
+                  menuChildren: [
+                    SizeTransition(
+                      sizeFactor: _animationController,
+                      child: FadeTransition(
+                        opacity: _animationController,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: Column(
+                              children: <Widget>[
+                                MenuItemButton(
+                                  onPressed: () {
+                                    HapticFeedback.mediumImpact();
+                                    _dialogBuilder(context, theme);
+                                  },
+                                  leadingIcon: Icon(Icons.rss_feed_outlined),
+                                  child: const Text('Add Feed'),
                                 ),
-                                overflow: TextOverflow.fade,
-                              ),
-                              // flexibleSpace:
-                              // ClipRect(
-                              //   child: BackdropFilter(
-                              //     filter: ImageFilter.blur(
-                              //       sigmaX: 36,
-                              //       sigmaY: 36,
-                              //     ),
-                              //     child: Container(
-                              //       color: Colors.transparent,
-                              //     ),
-                              //   ),
-                              // ),
+                                Divider(
+                                  height: 1,
+                                  thickness: 0.5,
+                                  color: Color(theme.textColor).withAlpha(50),
+                                ),
+                                MenuItemButton(
+                                  leadingIcon: Icon(CupertinoIcons.person_add),
+                                  onPressed: () {
+                                    HapticFeedback.mediumImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (BuildContext context) {
+                                          return Scaffold(
+                                            appBar: AppBar(
+                                              backgroundColor:
+                                                  Color(theme.surfaceColor).withAlpha(56),
+                                              elevation: 0,
+                                              title: Text(
+                                                'Accounts',
+                                                style: TextStyle(
+                                                  color: Color(theme.textColor),
+                                                ),
+                                                overflow: TextOverflow.fade,
+                                              ),
+                                            ),
+                                            body: ServerList(),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Add Accounts'),
+                                ),
+                              ],
                             ),
-                            body: ServerList(
-                              databaseService: widget.databaseService,
-                              api: widget.api,
-                            ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
-                  },
+                  ],
+                  child: IconButton(
+                    color: Color(theme.primaryColor),
+                    icon: const Icon(CupertinoIcons.add),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    onPressed: () => {
+                      HapticFeedback.mediumImpact(),
+                      if (_animationController.status
+                          case AnimationStatus.forward || AnimationStatus.completed)
+                        {
+                          _animationController.reverse(),
+                        }
+                      else
+                        {
+                          _animationController.forward(),
+                        }
+                    },
+                  ),
                 ),
+                IconButton(
+                    color: Color(theme.primaryColor),
+                    icon: const Icon(Icons.sync_sharp),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      refreshFeeds();
+                    }),
                 IconButton(
                   color: Color(theme.primaryColor),
                   icon: const Icon(CupertinoIcons.settings_solid),
@@ -825,7 +674,13 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             body: PersistentTabView(
               context,
-              controller: controller,
+              decoration: NavBarDecoration(
+                border: Border.all(width: 0.5, color: Color(theme.textColor).withAlpha(128)),
+                borderRadius: BorderRadius.all(
+                  Radius.circular(20),
+                ),
+              ),
+              controller: tabController,
               screens: _buildScreens(
                 refreshFeeds,
                 favServerCatogoriesProvider,
@@ -834,19 +689,24 @@ class HomeScreenState extends State<HomeScreen> {
                 favFeedsProvider,
                 newFeedsProvider,
                 allFeedsProvider,
-                widget.api,
-                widget.databaseService,
+                api,
+                databaseService,
               ),
               items: _navBarsItems(theme),
+              margin: EdgeInsets.only(
+                left: MediaQuery.sizeOf(context).width * 0.25,
+                right: MediaQuery.sizeOf(context).width * 0.25,
+                bottom: MediaQuery.sizeOf(context).height * 0.03,
+              ),
               hideNavigationBarWhenKeyboardAppears: true,
-              padding: const EdgeInsets.only(top: 8),
+              // padding: const EdgeInsets.only(bottom: 8),
               backgroundColor: Color(theme.secondaryColor),
               isVisible: true,
               animationSettings: const NavBarAnimationSettings(
                 navBarItemAnimation: ItemAnimationSettings(
                   // Navigation Bar's items animation properties.
                   duration: Duration(milliseconds: 300),
-                  curve: Curves.easeInCirc,
+                  curve: Curves.decelerate,
                 ),
                 screenTransitionAnimation: ScreenTransitionAnimationSettings(
                   // Screen transition animation on change of selected tab.
@@ -855,125 +715,381 @@ class HomeScreenState extends State<HomeScreen> {
                   screenTransitionAnimationType: ScreenTransitionAnimationType.slide,
                 ),
               ),
-              confineToSafeArea: true,
+              // confineToSafeArea: true,
               navBarHeight: kBottomNavigationBarHeight,
               navBarStyle: NavBarStyle
-                  .style12, // Choose the nav bar style with this property 7,12,13 are fav
+                  .style12, // Choose the nav bar style with this property 3, 7, 9, 12,13 are fav
             ),
           );
         });
   }
-}
 
-List<Widget> _buildScreens(
-  VoidCallback refreshFeeds,
-  ServerCatogoriesProvider favCatEntriesProvider,
-  ServerCatogoriesProvider newCatEntriesProvider,
-  ServerCatogoriesProvider allCatEntriesProvider,
-  LocalFeedsProvider localFavFeedsProvider,
-  LocalFeedsProvider localNewFeedsProvider,
-  LocalFeedsProvider localAllFeedsProvider,
-  APIService api,
-  DatabaseService databaseService,
-) {
-  return [
-    isLocalDBLoading
-        ? const CupertinoActivityIndicator(
-            radius: 20.0,
-            color: Color.fromRGBO(76, 2, 232, 1),
-          )
-        : MultiProvider(
-            providers: [
-              ChangeNotifierProvider<ServerCatogoriesProvider>(
-                create: (_) => favCatEntriesProvider,
+  Future<void> _dialogBuilder(BuildContext context, AppTheme theme) {
+    TextEditingController _controller = TextEditingController();
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.all(20),
+            contentPadding: EdgeInsets.all(0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    color: Color(theme.secondaryColor).withAlpha(50),
+                    border: Border.all(width: 0.5, color: Color(theme.textColor).withAlpha(128)),
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(20),
+                    ),
+                  ),
+                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Text(
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(theme.primaryColor),
+                    ),
+                    'Subscribe',
+                  ),
+                  // IconButton(
+                  //   onPressed: () => Navigator.pop(context),
+                  //   icon: Icon(Icons.close),
+                  //   highlightColor: Colors.transparent,
+                  // ),
+                  // ],
+                ),
               ),
-              ChangeNotifierProvider<LocalFeedsProvider>(
-                create: (_) => localFavFeedsProvider,
-              ),
-            ],
-            child: TabEntry(
-              refreshParent: refreshFeeds,
-              path: 'fav',
-              api: api,
-              databaseService: databaseService,
             ),
-          ),
-    isLocalDBLoading
-        ? const CupertinoActivityIndicator(
-            radius: 20.0,
-            color: Color.fromRGBO(76, 2, 232, 1),
-          )
-        : MultiProvider(
-            providers: [
-              ChangeNotifierProvider<ServerCatogoriesProvider>(
-                create: (_) => newCatEntriesProvider,
-              ),
-              ChangeNotifierProvider<LocalFeedsProvider>(
-                create: (_) => localNewFeedsProvider,
-              ),
-            ],
-            child: TabEntry(
-              refreshParent: refreshFeeds,
-              path: 'new',
-              api: api,
-              databaseService: databaseService,
-            ),
-          ),
-    isLocalDBLoading
-        ? const CupertinoActivityIndicator(
-            radius: 20.0,
-            color: Color.fromRGBO(76, 2, 232, 1),
-          )
-        : MultiProvider(
-            providers: [
-              ChangeNotifierProvider<ServerCatogoriesProvider>(
-                create: (_) => allCatEntriesProvider,
-              ),
-              ChangeNotifierProvider<LocalFeedsProvider>(
-                create: (_) => localAllFeedsProvider,
-              ),
-            ],
-            child: TabEntry(
-              refreshParent: refreshFeeds,
-              path: 'all',
-              api: api,
-              databaseService: databaseService,
-            ),
-          ),
-  ];
-}
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: Color(theme.secondaryColor).withAlpha(50),
+                      border: Border.all(width: 0.5, color: Color(theme.textColor).withAlpha(128)),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(20),
+                      ),
+                    ),
+                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Divider(
+                          color: Color(theme.primaryColor),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                          child: Text('RSS FEED'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                          child: TextField(
+                            enableSuggestions: false,
+                            controller: _controller,
+                            // autofocus: true,
+                            minLines: 1,
+                            maxLines: 3,
+                            // expands: true,
+                            decoration: InputDecoration(
+                              floatingLabelBehavior: FloatingLabelBehavior.never,
+                              labelStyle: TextStyle(color: Color(theme.textColor).withAlpha(150)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(10),
+                                ),
+                              ),
+                              label: Text('example.com/rss'),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width,
+                            child: CupertinoButton.filled(
+                                child: Text('Subscribe'),
+                                onPressed: () async {
+                                  //TODO
 
-List<PersistentBottomNavBarItem> _navBarsItems(AppTheme theme) {
-  return [
-    PersistentBottomNavBarItem(
-      icon: const Icon(CupertinoIcons.star),
-      title: ("Starred"),
-      onSelectedTabPressWhenNoScreensPushed: () => {
-        HapticFeedback.mediumImpact(),
+                                  LocalFeed? localFeed =
+                                      await databaseService.localFeedByUrl(_controller.text);
+                                  try {
+                                    if (localFeed == null) {
+                                      var response =
+                                          await api.fetchLocalFeedContents(_controller.text);
+                                      if (response.statusCode == 200) {
+                                        // print(json.encode(response.data));
+                                        // try{
+                                        String feedType = utils.detectFeedFormat(response.data);
+                                        switch (feedType) {
+                                          case 'Atom':
+                                            await databaseService.insertRssFeed(
+                                                RssFeedUrl(baseUrl: _controller.text));
+                                            final channel = AtomFeed.parse(response.data);
+                                            await databaseService.insertLocalFeed(LocalFeed(
+                                                title: channel.title ?? "feed",
+                                                categories: channel.categories.toString(),
+                                                url: _controller.text,
+                                                htmlUrl: channel.links.first.href ?? "",
+                                                iconUrl: channel.icon ?? "",
+                                                count: channel.items.length));
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: const Text('RSS Feed subscribed'),
+                                                backgroundColor: Colors.greenAccent,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10.0),
+                                                ),
+                                              ),
+                                            );
+                                            break;
+                                          case 'RSS 1.0':
+                                            await databaseService.insertRssFeed(
+                                                RssFeedUrl(baseUrl: _controller.text));
+                                            final channel = Rss1Feed.parse(response.data);
+                                            await databaseService.insertLocalFeed(LocalFeed(
+                                                title: channel.title ?? "feed",
+                                                categories: channel.dc?.subjects.toString() ?? "",
+                                                url: _controller.text,
+                                                htmlUrl: channel.link ?? "",
+                                                iconUrl: channel.image ?? "",
+                                                count: channel.items.length));
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: const Text('RSS Feed subscribed'),
+                                                backgroundColor: Colors.greenAccent,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10.0),
+                                                ),
+                                              ),
+                                            );
+                                            break;
+                                          case 'RSS 2.0':
+                                            await databaseService.insertRssFeed(
+                                                RssFeedUrl(baseUrl: _controller.text));
+                                            final channel = RssFeed.parse(response.data);
+                                            await databaseService.insertLocalFeed(LocalFeed(
+                                                title: channel.title ?? "feed",
+                                                categories: channel.categories.toString(),
+                                                url: _controller.text,
+                                                htmlUrl: channel.link ?? "",
+                                                iconUrl: channel.image?.url ?? "",
+                                                count: channel.items.length));
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: const Text('RSS Feed subscribed'),
+                                                backgroundColor: Colors.greenAccent,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10.0),
+                                                ),
+                                              ),
+                                            );
+                                            break;
+                                          default:
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: const Text('Unsupported feed'),
+                                                backgroundColor: Colors.redAccent,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10.0),
+                                                ),
+                                              ),
+                                            );
+                                        }
+                                      }
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('Feed already subscribed'),
+                                          backgroundColor: Colors.redAccent,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10.0),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } on Exception catch (e) {
+                                    log("Error: $e");
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Feed not supported'),
+                                        backgroundColor: Colors.redAccent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10.0),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ]);
       },
-      activeColorPrimary: Color(theme.primaryColor),
-      inactiveColorPrimary: Color(theme.textColor),
-      activeColorSecondary: Color(theme.primaryColor),
-    ),
-    PersistentBottomNavBarItem(
-      icon: const Icon(CupertinoIcons.circle),
-      title: ("New"),
-      activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-      inactiveColorPrimary: Color(theme.textColor),
-      activeColorSecondary: Color(theme.primaryColor),
-      // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
-      //   initialRoute: "/new",
-      // ),
-    ),
-    PersistentBottomNavBarItem(
-      icon: const Icon(CupertinoIcons.line_horizontal_3_decrease),
-      title: ("All"),
-      activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-      inactiveColorPrimary: Color(theme.textColor),
-      activeColorSecondary: Color(theme.primaryColor),
-      // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
-      //   initialRoute: "/new",
-      // ),
-    ),
-  ];
+    );
+  }
+
+  List<Widget> _buildScreens(
+    VoidCallback refreshFeeds,
+    ServerCatogoriesProvider favCatEntriesProvider,
+    ServerCatogoriesProvider newCatEntriesProvider,
+    ServerCatogoriesProvider allCatEntriesProvider,
+    LocalFeedsProvider localFavFeedsProvider,
+    LocalFeedsProvider localNewFeedsProvider,
+    LocalFeedsProvider localAllFeedsProvider,
+    APIService api,
+    DatabaseService databaseService,
+  ) {
+    return [
+      // isLocalDBLoading
+      //     ? const CupertinoActivityIndicator(
+      //         radius: 20.0,
+      //         color: Color.fromRGBO(76, 2, 232, 1),
+      //       )
+      //     :
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ServerCatogoriesProvider>(
+            create: (_) => favCatEntriesProvider,
+          ),
+          ChangeNotifierProvider<LocalFeedsProvider>(
+            create: (_) => localFavFeedsProvider,
+          ),
+          // ...List.generate(
+          //   localFavFeedsProviders.,
+          //   (index) => Provider<IndividualLocalFeedProvider>.value(
+          //     value: localFavFeedsProviders[index],
+          //   ),
+          // ),
+        ],
+        child: TabEntry(
+          refreshParent: refreshFeeds,
+          path: 'fav',
+          api: api,
+          databaseService: databaseService,
+        ),
+      ),
+      // isLocalDBLoading
+      //     ? const CupertinoActivityIndicator(
+      //         radius: 20.0,
+      //         color: Color.fromRGBO(76, 2, 232, 1),
+      //       )
+      //     :
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ServerCatogoriesProvider>(
+            create: (_) => newCatEntriesProvider,
+          ),
+          ChangeNotifierProvider<LocalFeedsProvider>(
+            create: (_) => localNewFeedsProvider,
+          ),
+          // ...List.generate(
+          //   localFavFeedsProviders.length,
+          //   (index) =>
+          //       Provider<IndividualLocalFeedProvider>.value(value: localNewFeedsProviders[index]),
+          // ),
+        ],
+        child: TabEntry(
+          refreshParent: refreshFeeds,
+          path: 'new',
+          api: api,
+          databaseService: databaseService,
+        ),
+      ),
+      // isLocalDBLoading
+      //     ? const CupertinoActivityIndicator(
+      //         radius: 20.0,
+      //         color: Color.fromRGBO(76, 2, 232, 1),
+      //       )
+      //     :
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ServerCatogoriesProvider>(
+            create: (_) => allCatEntriesProvider,
+          ),
+          ChangeNotifierProvider<LocalFeedsProvider>(
+            create: (_) => localAllFeedsProvider,
+          ),
+
+          // Provider<List<IndividualLocalFeedProvider>>(
+          //   create: (_) => List.generate(localFavFeedsProviders.length, (index) => localAllFeedsProviders[index]),
+          // ),
+          // ...List.generate(
+          //   localFavFeedsProviders.length,
+          //   (index) =>
+          //       Provider<IndividualLocalFeedProvider>.value(value: localAllFeedsProviders[index]),
+          // ),
+        ],
+        child: TabEntry(
+          refreshParent: refreshFeeds,
+          path: 'all',
+          api: api,
+          databaseService: databaseService,
+        ),
+      ),
+    ];
+  }
+
+  List<PersistentBottomNavBarItem> _navBarsItems(AppTheme theme) {
+    return [
+      PersistentBottomNavBarItem(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        opacity: 0.1,
+        icon: const Icon(CupertinoIcons.star),
+        title: ("Starred"),
+        // onPressed: (_) => {
+        //   HapticFeedback.mediumImpact(),
+        // },
+        activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
+        inactiveColorPrimary: Color(theme.textColor),
+        activeColorSecondary: Color(theme.primaryColor),
+      ),
+      PersistentBottomNavBarItem(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        opacity: 0.1,
+        icon: const Icon(CupertinoIcons.circle),
+        title: ("New"),
+        activeColorPrimary: Color(theme.primaryColor),
+        inactiveColorPrimary: Color(theme.textColor),
+        activeColorSecondary: Color(theme.primaryColor),
+        // onPressed: (_) => {
+        //   HapticFeedback.mediumImpact(),
+        //   // onItem
+        // },
+        // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
+        //   initialRoute: "/new",
+        // ),
+      ),
+      PersistentBottomNavBarItem(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        opacity: 0.1,
+        icon: const Icon(CupertinoIcons.line_horizontal_3_decrease),
+        title: ("All"),
+        activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
+        inactiveColorPrimary: Color(theme.textColor),
+        activeColorSecondary: Color(theme.primaryColor),
+        // onPressed: (_) => {
+        //   HapticFeedback.mediumImpact(),
+        // },
+        // routeAndNavigatorSettings: const RouteAndNavigatorSettings(
+        //   initialRoute: "/new",
+        // ),
+      ),
+    ];
+  }
 }

@@ -1,6 +1,6 @@
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/category.dart';
-import 'package:feederr/models/feedentry.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/category.dart';
+import 'package:blazefeeds/models/feedentry.dart';
 
 class CategoryEntry {
   final Category category;

@@ -1,4 +1,4 @@
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -65,8 +65,7 @@ class CustomWebViewState extends State<CustomWebView> {
           ),
           !isLoaded
               ? Selector<ThemeProvider, int>(
-                  selector: (_, themeProvider) =>
-                      themeProvider.theme.primaryColor,
+                  selector: (_, themeProvider) => themeProvider.theme.primaryColor,
                   builder: (context, primaryColor, child) {
                     return LinearProgressIndicator(
                       value: webProgress,

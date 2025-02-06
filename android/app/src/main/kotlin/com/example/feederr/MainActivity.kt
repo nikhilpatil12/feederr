@@ -1,4 +1,4 @@
-package com.nikhil.feederr
+package com.nikhil.blazefeeds
 
 import io.flutter.embedding.android.FlutterActivity
 

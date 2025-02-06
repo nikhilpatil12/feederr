@@ -1,4 +1,4 @@
-import 'package:feederr/models/categories/categoryentry.dart';
+import 'package:blazefeeds/models/categories/categoryentry.dart';
 import 'package:flutter/material.dart';
 
 class ServerCatogoriesProvider extends ChangeNotifier {

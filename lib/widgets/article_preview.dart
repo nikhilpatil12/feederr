@@ -1,17 +1,14 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/font_provider.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/utils/utils.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/font_provider.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:html/dom.dart' as dom;

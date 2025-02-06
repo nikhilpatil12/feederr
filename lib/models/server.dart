@@ -2,6 +2,8 @@ import 'dart:convert';
 
 class Server {
   final int? id;
+  final String name;
+  final String type;
   final String baseUrl;
   final String userName;
   final String password;
@@ -9,6 +11,8 @@ class Server {
 
   Server({
     this.id,
+    required this.name,
+    required this.type,
     required this.baseUrl,
     required this.userName,
     required this.password,
@@ -18,6 +22,8 @@ class Server {
   Map<String, dynamic> toMap() {
     return {
       'baseUrl': baseUrl,
+      'name': name,
+      'type': type,
       'userName': userName,
       'password': password,
       'auth': auth,
@@ -27,6 +33,8 @@ class Server {
   factory Server.fromMap(Map<String, dynamic> map) {
     return Server(
       id: map['id']?.toInt() ?? 0,
+      name: map['name'] ?? '',
+      type: map['type'] ?? '',
       baseUrl: map['baseUrl'] ?? '',
       userName: map['userName'] ?? '',
       password: map['password'] ?? '',

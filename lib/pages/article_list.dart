@@ -1,15 +1,15 @@
 import 'dart:developer';
 import 'dart:ui';
 
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/server.dart';
-import 'package:feederr/models/starred.dart';
-import 'package:feederr/models/unread.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/widgets/article.dart';
-import 'package:feederr/widgets/article_preview.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/server.dart';
+import 'package:blazefeeds/models/starred.dart';
+import 'package:blazefeeds/models/unread.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/widgets/article.dart';
+import 'package:blazefeeds/widgets/article_preview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -60,7 +60,6 @@ class _ArticleListState extends State<ArticleList> {
   bool isSortMenuVisible = false;
   int unRead = 0;
   final ScrollController _controller = ScrollController();
-  // DatabaseService databaseService = DatabaseService();
   bool isInitialBuild = true;
   @override
   void initState() {
@@ -164,7 +163,6 @@ class _ArticleListState extends State<ArticleList> {
             } else {
               liIdsToMarkUnRead[article.serverId] = [article.id2 ?? 0];
             }
-            newUnread += 1;
           } else {
             // read, add to read
             if (liIdsToMarkRead.containsKey(article.serverId)) {
@@ -219,16 +217,6 @@ class _ArticleListState extends State<ArticleList> {
               .markAsNotStarred(server.baseUrl, server.auth, liIdsToMarkNotStarred[serverId] ?? []);
         }
       }
-      // for (UnreadId unreadId in dbUnreadIds) {
-      //   if (unreadId.serverId != 0 && !liServers.contains(unreadId.serverId)) {
-      //     liServers.add(unreadId.serverId);
-      //   }
-      // }
-      // for (int serverId in liServers) {
-      //   Server server = await widget.databaseService.server(serverId);
-      //   List<int> readIds = [];
-
-      // await widget.api.markIdsAsRead(baseUrl, auth, liIdsToMarkRead);
 
       setState(() {
         unRead = newUnread;
@@ -363,41 +351,50 @@ class _ArticleListState extends State<ArticleList> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 40),
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                    color: Color(themeProvider.theme.primaryColor),
-                    border: Border.all(width: 1),
-                    borderRadius: const BorderRadius.all(Radius.circular(10))),
-                child: Wrap(
-                  children: [
-                    IconButton(
-                      highlightColor: Colors.transparent,
-                      color: Colors.black,
-                      onPressed: () => {
-                        HapticFeedback.lightImpact(),
-                        setState(() {
-                          isSortMenuVisible = !isSortMenuVisible;
-                          if (isSortMenuVisible) isMenuVisible = false;
-                        })
-                      },
-                      icon: const Icon(Icons.sort_rounded),
+              padding: const EdgeInsets.only(bottom: 30),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(themeProvider.theme.secondaryColor).withAlpha(25),
+                      border: Border.all(
+                          width: 0.5, color: Color(themeProvider.theme.textColor).withAlpha(128)),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(20),
+                      ),
                     ),
-                    IconButton(
-                      highlightColor: Colors.transparent,
-                      color: Colors.black,
-                      onPressed: () => {
-                        HapticFeedback.lightImpact(),
-                        setState(() {
-                          isMenuVisible = !isMenuVisible;
-
-                          if (isMenuVisible) isSortMenuVisible = false;
-                        })
-                      },
-                      icon: const Icon(Icons.check),
+                    child: Wrap(
+                      spacing: 10,
+                      children: [
+                        IconButton(
+                          highlightColor: Colors.transparent,
+                          color: Color(themeProvider.theme.textColor),
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            setState(() {
+                              isSortMenuVisible = !isSortMenuVisible;
+                              if (isSortMenuVisible) isMenuVisible = false;
+                            });
+                          },
+                          icon: const Icon(Icons.sort_rounded),
+                        ),
+                        IconButton(
+                          highlightColor: Colors.transparent,
+                          color: Color(themeProvider.theme.textColor),
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            setState(() {
+                              isMenuVisible = !isMenuVisible;
+                              if (isMenuVisible) isSortMenuVisible = false;
+                            });
+                          },
+                          icon: const Icon(Icons.check),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -419,7 +416,7 @@ class _ArticleListState extends State<ArticleList> {
                 color: Colors.transparent,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(
-                      sigmaX: isMenuVisible ? 5 : 0, sigmaY: isMenuVisible ? 5 : 0),
+                      sigmaX: isMenuVisible ? 8 : 0, sigmaY: isMenuVisible ? 8 : 0),
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 100),
                     color: Colors.black.withAlpha(51),
@@ -428,44 +425,50 @@ class _ArticleListState extends State<ArticleList> {
                       children: [
                         Container(
                           width: screenWidth * 0.9,
-                          clipBehavior: Clip.antiAlias,
+                          clipBehavior: Clip.hardEdge,
                           decoration: BoxDecoration(
-                            color: Color(themeProvider.theme.surfaceColor),
+                            color: Color(themeProvider.theme.secondaryColor).withAlpha(150),
+                            border: Border.all(
+                                width: 0.5,
+                                color: Color(themeProvider.theme.textColor).withAlpha(128)),
                             borderRadius: const BorderRadius.all(
-                              Radius.circular(10),
+                              Radius.circular(20),
                             ),
                           ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                color: Color(themeProvider.theme.primaryColor),
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(20, 10, 10, 10),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        "Mark all as read",
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            color: Color(themeProvider.theme.textColor),
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const Spacer(),
-                                      IconButton(
-                                        highlightColor: Colors.transparent,
-                                        onPressed: (() {
-                                          setState(() {
-                                            isMenuVisible = false;
-                                          });
-                                        }),
-                                        icon: Icon(
-                                          Icons.close,
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 10, 10, 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "Mark all as read",
+                                      style: TextStyle(
+                                          fontSize: 16,
                                           color: Color(themeProvider.theme.textColor),
-                                        ),
-                                      )
-                                    ],
-                                  ),
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    IconButton(
+                                      highlightColor: Colors.transparent,
+                                      onPressed: (() {
+                                        HapticFeedback.mediumImpact();
+                                        setState(() {
+                                          isMenuVisible = false;
+                                        });
+                                      }),
+                                      icon: Icon(
+                                        Icons.close,
+                                        color: Color(themeProvider.theme.textColor),
+                                      ),
+                                    )
+                                  ],
                                 ),
+                              ),
+                              Divider(
+                                color: Color(themeProvider.theme.primaryColor),
+                                thickness: 1,
                               ),
                               Padding(
                                 padding: const EdgeInsets.all(20),
@@ -482,7 +485,7 @@ class _ArticleListState extends State<ArticleList> {
                                 child: SizedBox(
                                   width: screenWidth,
                                   child: CupertinoButton(
-                                    color: Color(themeProvider.theme.primaryColor).withAlpha(102),
+                                    color: Color(themeProvider.theme.primaryColor),
                                     child: Text(
                                       "Yes",
                                       style: TextStyle(
@@ -544,204 +547,213 @@ class _ArticleListState extends State<ArticleList> {
                 color: Colors.transparent,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(
-                      sigmaX: isSortMenuVisible ? 5 : 0, sigmaY: isSortMenuVisible ? 5 : 0),
+                      sigmaX: isSortMenuVisible ? 8 : 0, sigmaY: isSortMenuVisible ? 8 : 0),
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 100),
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withAlpha(50),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Container(
                           width: screenWidth * 0.9,
-                          clipBehavior: Clip.antiAlias,
+                          clipBehavior: Clip.hardEdge,
                           decoration: BoxDecoration(
-                            color: Color(themeProvider.theme.surfaceColor),
+                            color: Color(themeProvider.theme.secondaryColor).withAlpha(150),
+                            border: Border.all(
+                                width: 0.5,
+                                color: Color(themeProvider.theme.textColor).withAlpha(128)),
                             borderRadius: const BorderRadius.all(
-                              Radius.circular(10),
+                              Radius.circular(20),
                             ),
                           ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                color: Color(themeProvider.theme.primaryColor),
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(20, 10, 10, 10),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        "Article Sorting",
-                                        style: TextStyle(
-                                            color: Color(themeProvider.theme.textColor),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16),
-                                      ),
-                                      const Spacer(),
-                                      IconButton(
-                                        highlightColor: Colors.transparent,
-                                        onPressed: () => {
-                                          setState(
-                                            () {
-                                              isSortMenuVisible = false;
-                                            },
-                                          ),
-                                        },
-                                        icon: Icon(
-                                          Icons.close,
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "Article Sorting",
+                                      style: TextStyle(
                                           color: Color(themeProvider.theme.textColor),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16),
+                                    ),
+                                    IconButton(
+                                      highlightColor: Colors.transparent,
+                                      onPressed: () => {
+                                        HapticFeedback.mediumImpact(),
+                                        setState(
+                                          () {
+                                            isSortMenuVisible = false;
+                                          },
                                         ),
-                                      )
-                                    ],
+                                      },
+                                      icon: Icon(
+                                        Icons.close,
+                                        color: Color(themeProvider.theme.textColor),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              Divider(
+                                color: Color(themeProvider.theme.primaryColor),
+                                height: 1,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                child: Text(
+                                  "Sort Articles By",
+                                  style: TextStyle(
+                                    color: Color(themeProvider.theme.textColor),
+                                  ),
+                                ),
+                                // const Spacer(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                child: CupertinoSlidingSegmentedControl<SortBy>(
+                                    groupValue: valueOrderBy,
+                                    // Callback that sets the selected segmented control.
+                                    onValueChanged: (SortBy? value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          valueOrderBy = value;
+                                          sortArticles();
+                                        });
+                                      }
+                                    },
+                                    children: <SortBy, Widget>{
+                                      SortBy.date: Text(
+                                        'By Date',
+                                        style:
+                                            TextStyle(color: Color(themeProvider.theme.textColor)),
+                                      ),
+                                      SortBy.title: Text(
+                                        'By Title',
+                                        style:
+                                            TextStyle(color: Color(themeProvider.theme.textColor)),
+                                      ),
+                                    }),
+                                // DropdownButton<String>(
+                                //   style: TextStyle(
+                                //     color: Color(widget
+                                //         .themeProvider.theme.textColor),
+                                //   ),
+                                //   value: valueOrderBy,
+                                //   icon: Icon(
+                                //     Icons.arrow_downward,
+                                //     color: Color(widget
+                                //         .themeProvider.theme.textColor),
+                                //   ),
+                                //   elevation: 0,
+                                //   dropdownColor: Color(widget
+                                //           .themeProvider.theme.primaryColor)
+                                //       .withAlpha(234),
+                                //   borderRadius: const BorderRadius.all(
+                                //       Radius.circular(20)),
+                                //   // style: const TextStyle(color: Colors.deepPurple),
+                                //   // underline: Container(
+                                //   //   height: 2,
+                                //   //   color: Colors.deepPurpleAccent,
+                                //   // ),
+                                //   onChanged: (String? value) {
+                                //     // This is called when the user selects an item.
+                                //     setState(() {
+                                //       valueOrderBy = value!;
+                                //       sortArticles();
+                                //     });
+                                //   },
+                                //   items: liOrderBy
+                                //       .map<DropdownMenuItem<String>>(
+                                //           (String value) {
+                                //     return DropdownMenuItem<String>(
+                                //       value: value,
+                                //       child: Text(value),
+                                //     );
+                                //   }).toList(),
+                                // ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                child: Text(
+                                  "Sort Order",
+                                  style: TextStyle(
+                                    color: Color(themeProvider.theme.textColor),
                                   ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      "Sort Articles By",
-                                      style: TextStyle(
-                                        color: Color(themeProvider.theme.textColor),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                child: CupertinoSlidingSegmentedControl<SortOrder>(
+                                    groupValue: valueSortOrder,
+                                    // Callback that sets the selected segmented control.
+                                    onValueChanged: (SortOrder? value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          valueSortOrder = value;
+                                          sortArticles();
+                                        });
+                                      }
+                                    },
+                                    children: <SortOrder, Widget>{
+                                      SortOrder.ascending: Text(
+                                        'Ascending',
+                                        style:
+                                            TextStyle(color: Color(themeProvider.theme.textColor)),
                                       ),
-                                    ),
-                                    const Spacer(),
-                                    CupertinoSlidingSegmentedControl<SortBy>(
-                                        groupValue: valueOrderBy,
-                                        // Callback that sets the selected segmented control.
-                                        onValueChanged: (SortBy? value) {
-                                          if (value != null) {
-                                            setState(() {
-                                              valueOrderBy = value;
-                                              sortArticles();
-                                            });
-                                          }
-                                        },
-                                        children: const <SortBy, Widget>{
-                                          SortBy.date: Text(
-                                            'By Date',
-                                            style: TextStyle(color: CupertinoColors.white),
-                                          ),
-                                          SortBy.title: Text(
-                                            'By Title',
-                                            style: TextStyle(color: CupertinoColors.white),
-                                          ),
-                                        }),
-                                    // DropdownButton<String>(
-                                    //   style: TextStyle(
-                                    //     color: Color(widget
-                                    //         .themeProvider.theme.textColor),
-                                    //   ),
-                                    //   value: valueOrderBy,
-                                    //   icon: Icon(
-                                    //     Icons.arrow_downward,
-                                    //     color: Color(widget
-                                    //         .themeProvider.theme.textColor),
-                                    //   ),
-                                    //   elevation: 0,
-                                    //   dropdownColor: Color(widget
-                                    //           .themeProvider.theme.primaryColor)
-                                    //       .withAlpha(234),
-                                    //   borderRadius: const BorderRadius.all(
-                                    //       Radius.circular(20)),
-                                    //   // style: const TextStyle(color: Colors.deepPurple),
-                                    //   // underline: Container(
-                                    //   //   height: 2,
-                                    //   //   color: Colors.deepPurpleAccent,
-                                    //   // ),
-                                    //   onChanged: (String? value) {
-                                    //     // This is called when the user selects an item.
-                                    //     setState(() {
-                                    //       valueOrderBy = value!;
-                                    //       sortArticles();
-                                    //     });
-                                    //   },
-                                    //   items: liOrderBy
-                                    //       .map<DropdownMenuItem<String>>(
-                                    //           (String value) {
-                                    //     return DropdownMenuItem<String>(
-                                    //       value: value,
-                                    //       child: Text(value),
-                                    //     );
-                                    //   }).toList(),
-                                    // ),
-                                  ],
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      "Sort Order",
-                                      style: TextStyle(
-                                        color: Color(themeProvider.theme.textColor),
+                                      SortOrder.descending: Text(
+                                        'Descending',
+                                        style:
+                                            TextStyle(color: Color(themeProvider.theme.textColor)),
                                       ),
-                                    ),
-                                    const Spacer(),
-                                    CupertinoSlidingSegmentedControl<SortOrder>(
-                                        groupValue: valueSortOrder,
-                                        // Callback that sets the selected segmented control.
-                                        onValueChanged: (SortOrder? value) {
-                                          if (value != null) {
-                                            setState(() {
-                                              valueSortOrder = value;
-                                              sortArticles();
-                                            });
-                                          }
-                                        },
-                                        children: const <SortOrder, Widget>{
-                                          SortOrder.ascending: Text(
-                                            'Ascending',
-                                            style: TextStyle(color: CupertinoColors.white),
-                                          ),
-                                          SortOrder.descending: Text(
-                                            'Descending',
-                                            style: TextStyle(color: CupertinoColors.white),
-                                          ),
-                                        }),
-                                    // DropdownButton<String>(
-                                    //   value: valueSortOrder,
-                                    //   style: TextStyle(
-                                    //     color: Color(widget
-                                    //         .themeProvider.theme.textColor),
-                                    //   ),
-                                    //   icon: Icon(
-                                    //     Icons.arrow_downward,
-                                    //     color: Color(widget
-                                    //         .themeProvider.theme.textColor),
-                                    //   ),
-                                    //   elevation: 0,
-                                    //   dropdownColor: Color(widget
-                                    //           .themeProvider.theme.primaryColor)
-                                    //       .withAlpha(234),
-                                    //   borderRadius: const BorderRadius.all(
-                                    //       Radius.circular(20)),
-                                    //   // style: const TextStyle(color: Colors.deepPurple),
-                                    //   // underline: Container(
-                                    //   //   height: 2,
-                                    //   //   color: Colors.deepPurpleAccent,
-                                    //   // ),
-                                    //   onChanged: (String? value) {
-                                    //     // This is called when the user selects an item.
-                                    //     setState(() {
-                                    //       valueSortOrder = value!;
-                                    //       sortArticles();
-                                    //     });
-                                    //   },
-                                    //   items: liSortOrder
-                                    //       .map<DropdownMenuItem<String>>(
-                                    //           (String value) {
-                                    //     return DropdownMenuItem<String>(
-                                    //       value: value,
-                                    //       child: Text(
-                                    //         value,
-                                    //       ),
-                                    //     );
-                                    //   }).toList(),
-                                    // ),
-                                  ],
-                                ),
+                                    }),
+
+                                // DropdownButton<String>(
+                                //   value: valueSortOrder,
+                                //   style: TextStyle(
+                                //     color: Color(widget
+                                //         .themeProvider.theme.textColor),
+                                //   ),
+                                //   icon: Icon(
+                                //     Icons.arrow_downward,
+                                //     color: Color(widget
+                                //         .themeProvider.theme.textColor),
+                                //   ),
+                                //   elevation: 0,
+                                //   dropdownColor: Color(widget
+                                //           .themeProvider.theme.primaryColor)
+                                //       .withAlpha(234),
+                                //   borderRadius: const BorderRadius.all(
+                                //       Radius.circular(20)),
+                                //   // style: const TextStyle(color: Colors.deepPurple),
+                                //   // underline: Container(
+                                //   //   height: 2,
+                                //   //   color: Colors.deepPurpleAccent,
+                                //   // ),
+                                //   onChanged: (String? value) {
+                                //     // This is called when the user selects an item.
+                                //     setState(() {
+                                //       valueSortOrder = value!;
+                                //       sortArticles();
+                                //     });
+                                //   },
+                                //   items: liSortOrder
+                                //       .map<DropdownMenuItem<String>>(
+                                //           (String value) {
+                                //     return DropdownMenuItem<String>(
+                                //       value: value,
+                                //       child: Text(
+                                //         value,
+                                //       ),
+                                //     );
+                                //   }).toList(),
+                                // ),
                               ),
+                              Padding(padding: EdgeInsets.all(10))
                             ],
                           ),
                         )

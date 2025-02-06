@@ -1,11 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/pages/article_view.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/utils/utils.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/pages/article_view.dart';
+import 'package:blazefeeds/providers/latest_article_provider.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -41,8 +42,10 @@ class _ArticleListItemState extends State<ArticleListItem> {
         builder: (_, theme, __) {
           return GestureDetector(
             onTap: () async {
-              Navigator.of(context, rootNavigator: true).push<int>(
-                MaterialPageRoute<int>(
+              Provider.of<LatestArticleNotifier>(context, listen: false)
+                  .updateValue(widget.articleIndex);
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
                   builder: (BuildContext context) {
                     return ArticleView(
                       articles: widget.articles,
@@ -52,11 +55,10 @@ class _ArticleListItemState extends State<ArticleListItem> {
                     );
                   },
                 ),
-              ).then((lastArticleIndex) {
+              ).then((_) {
                 // This will be called after Navigator.pop() on NextPage
-                // print("Returned to Article List");
-                widget.onReturn(lastArticleIndex ?? widget.articleIndex);
-                // onReturnToPage();
+                int currentArticle = Provider.of<LatestArticleNotifier>(context, listen: false).id;
+                widget.onReturn(currentArticle);
               });
             },
             onTapDown: (tapDetails) => {

@@ -1,11 +1,16 @@
-import 'package:feederr/models/font_settings.dart';
-import 'package:feederr/providers/api_provider.dart';
-import 'package:feederr/providers/font_provider.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:blazefeeds/models/font_settings.dart';
+import 'package:blazefeeds/providers/api_provider.dart';
+import 'package:blazefeeds/providers/font_provider.dart';
+import 'package:blazefeeds/providers/latest_article_provider.dart';
+import 'package:blazefeeds/providers/status_provider.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/home.dart';
-import 'package:feederr/models/app_theme.dart';
+import 'package:blazefeeds/models/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +56,8 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => themeProvider),
           ChangeNotifierProvider(create: (_) => fontProvider),
           ChangeNotifierProvider(create: (_) => apiProvider),
+          ChangeNotifierProvider(create: (_) => LatestArticleNotifier()),
+          ChangeNotifierProvider(create: (_) => StatusProvider()),
         ],
         child: Selector<ThemeProvider, AppTheme>(
           selector: (_, themeProvider) => themeProvider.theme,
@@ -74,7 +81,11 @@ class MyApp extends StatelessWidget {
               colorScheme: ColorScheme(
                 primary: Color(theme.primaryColor),
                 brightness: theme.isDark ? Brightness.dark : Brightness.light,
-                onPrimary: Color(theme.textColor),
+                onPrimary: Color(theme.primaryColor).computeLuminance() -
+                            Color(theme.textColor).computeLuminance() >=
+                        0.3
+                    ? Color(theme.textColor)
+                    : Color(theme.surfaceColor),
                 secondary: Color(theme.secondaryColor),
                 onSecondary: Color.fromRGBO(255, 0, 183, 1),
                 error: Color.fromRGBO(205, 0, 0, 1),
@@ -89,13 +100,13 @@ class MyApp extends StatelessWidget {
               pageTransitionsTheme: const PageTransitionsTheme(
                 builders: {
                   // Use PredictiveBackPageTransitionsBuilder to get the predictive back route transition!
-                  TargetPlatform.android:
-                      PredictiveBackPageTransitionsBuilder(),
+                  TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
                 },
               ),
             );
             return MaterialApp(
-              title: "Feederr",
+              debugShowCheckedModeBanner: false,
+              title: "Blaze Feeds",
               theme: themeData,
               home: HomeScreen(),
             );

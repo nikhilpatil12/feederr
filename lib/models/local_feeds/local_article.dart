@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:feederr/models/article.dart';
+import 'package:blazefeeds/models/article.dart';
 
 class LocalArticle {
   final String? id;
@@ -109,8 +109,7 @@ class LocalArticle {
 
   String toJson() => json.encode(toMap());
 
-  factory LocalArticle.fromJson(String source) =>
-      LocalArticle.fromMap(json.decode(source));
+  factory LocalArticle.fromJson(String source) => LocalArticle.fromMap(json.decode(source));
 
   // Implement toString to make it easier to see information about
   // each article when using the print statement.

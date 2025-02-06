@@ -1,11 +1,12 @@
 import 'dart:ui';
 
-import 'package:feederr/pages/add_server.dart';
-import 'package:feederr/pages/settings/ai.dart';
-import 'package:feederr/pages/settings/appearance.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
+import 'package:blazefeeds/pages/settings/add_server.dart';
+import 'package:blazefeeds/pages/settings/ai.dart';
+import 'package:blazefeeds/pages/settings/appearance.dart';
+import 'package:blazefeeds/pages/settings/backup.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,8 +70,7 @@ class SettingsState extends State<Settings> {
                     return Scaffold(
                       // extendBodyBehindAppBar: true,
                       appBar: AppBar(
-                        backgroundColor: Color(themeProvider.theme.surfaceColor)
-                            .withAlpha(56),
+                        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
                         elevation: 0,
                         title: Text(
                           'Accounts',
@@ -91,10 +91,7 @@ class SettingsState extends State<Settings> {
                         //   ),
                         // ),
                       ),
-                      body: ServerList(
-                        databaseService: widget.databaseService,
-                        api: widget.api,
-                      ),
+                      body: ServerList(),
                     );
                   },
                 ),
@@ -127,6 +124,14 @@ class SettingsState extends State<Settings> {
             textColor: Color(themeProvider.theme.textColor),
             onTap: () {
               HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return BackupSettings();
+                  },
+                ),
+              );
             },
           ),
           ListTile(
@@ -144,8 +149,7 @@ class SettingsState extends State<Settings> {
                     return Scaffold(
                       // extendBodyBehindAppBar: true,
                       appBar: AppBar(
-                        backgroundColor: Color(themeProvider.theme.surfaceColor)
-                            .withAlpha(56),
+                        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
                         elevation: 0,
                         title: Text(
                           'Summarization ',

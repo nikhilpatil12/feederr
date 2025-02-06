@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:feederr/models/app_theme.dart';
+import 'package:blazefeeds/models/app_theme.dart';
 import 'package:flutter/widgets.dart';
 
 class ThemePreview extends StatefulWidget {
@@ -100,7 +100,7 @@ class ThemePreviewState extends State<ThemePreview> {
             decoration: BoxDecoration(
               color: Color(widget.theme.secondaryColor),
               // border: Border.all(color: Colors.transparent),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [

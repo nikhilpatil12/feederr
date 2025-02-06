@@ -1,20 +1,20 @@
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/models/article.dart';
-import 'package:feederr/models/feedentry.dart';
-import 'package:feederr/models/local_feeds/local_article.dart';
-import 'package:feederr/models/local_feeds/local_feed.dart';
-import 'package:feederr/models/local_feeds/local_feedentry.dart';
-import 'package:feederr/models/categories/smart_categoryentry.dart';
-import 'package:feederr/models/categories/categoryentry.dart';
-import 'package:feederr/providers/local_feed_provider.dart';
-import 'package:feederr/providers/server_categories_provider.dart';
-import 'package:feederr/utils/apiservice.dart';
-import 'package:feederr/utils/dbhelper.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/utils/utils.dart';
-import 'package:feederr/widgets/category.dart';
-import 'package:feederr/widgets/local_feed.dart';
-import 'package:feederr/widgets/smart_category.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/models/article.dart';
+import 'package:blazefeeds/models/feedentry.dart';
+import 'package:blazefeeds/models/local_feeds/local_article.dart';
+import 'package:blazefeeds/models/local_feeds/local_feed.dart';
+import 'package:blazefeeds/models/local_feeds/local_feedentry.dart';
+import 'package:blazefeeds/models/categories/smart_categoryentry.dart';
+import 'package:blazefeeds/models/categories/categoryentry.dart';
+import 'package:blazefeeds/providers/individual_local_feed_provider.dart';
+import 'package:blazefeeds/providers/server_categories_provider.dart';
+import 'package:blazefeeds/utils/apiservice.dart';
+import 'package:blazefeeds/utils/dbhelper.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
+import 'package:blazefeeds/widgets/category.dart';
+import 'package:blazefeeds/widgets/local_feed.dart';
+import 'package:blazefeeds/widgets/smart_category.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +48,7 @@ class _TabEntryState extends State<TabEntry> {
   }
 
   Future<void> _createSmartViews(
-      List<CategoryEntry> categories, List<LocalFeedEntry> localFeeds) async {
+      List<CategoryEntry> categories, List<LocalFeedEntry> feedEntries) async {
     smartCategories = [];
     List<Article> liTodayArticles = [];
     List<Article> liAllArticles = [];
@@ -80,7 +80,12 @@ class _TabEntryState extends State<TabEntry> {
         }
       }
     }
-    for (LocalFeedEntry feedEntry in localFeeds) {
+
+    for (var feedEntry in feedEntries) {
+      // LocalFeedEntry feedEntry = entry;
+      // Now you can use `key` and `provider`
+
+      // for (LocalFeedEntry feedEntry in localFeeds) {
       List<Article> tempTodayArticles = [];
       List<Article> tempAllArticles = [];
       for (LocalArticle localArticle in feedEntry.articles) {
@@ -124,7 +129,7 @@ class _TabEntryState extends State<TabEntry> {
   Widget build(BuildContext context) {
     final localFeeds = Provider.of<LocalFeedsProvider>(context);
     return Consumer<ServerCatogoriesProvider>(builder: (_, sCatogoriesProvider, __) {
-      _createSmartViews(sCatogoriesProvider.categoryEntries, localFeeds.feeds);
+      _createSmartViews(sCatogoriesProvider.categoryEntries, localFeeds.getAllFeedEntries());
       return Selector<ThemeProvider, AppTheme>(
           selector: (_, themeProvider) => themeProvider.theme,
           builder: (_, theme, __) {
@@ -223,18 +228,24 @@ class _TabEntryState extends State<TabEntry> {
                       ),
                     ),
                     SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (BuildContext context, int index) => LocalFeedListItem(
-                          count: localFeeds.feeds[index].articles.length,
-                          articles: localFeeds.feeds[index].articles,
-                          feed: localFeeds.feeds[index],
-                          api: widget.api,
-                          databaseService: widget.databaseService,
-                          callback: widget.refreshParent,
-                        ),
-                        childCount: localFeeds.length,
-                      ),
-                    ),
+                        delegate: SliverChildBuilderDelegate(
+                      (BuildContext context, int index) {
+                        String feedId = localFeeds.getAllFeedProviders().keys.elementAt(index);
+                        IndividualLocalFeedProvider feedProvider =
+                            localFeeds.getSingleFeedProvider(feedId);
+
+                        return ChangeNotifierProvider(
+                          create: (_) => feedProvider,
+                          child: LocalFeedListItem(
+                            feed: feedProvider.feed,
+                            api: widget.api,
+                            databaseService: widget.databaseService,
+                            callback: widget.refreshParent,
+                          ),
+                        );
+                      },
+                      childCount: localFeeds.length,
+                    )),
                   ],
                 ),
               ),

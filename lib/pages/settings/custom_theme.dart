@@ -1,6 +1,6 @@
-import 'package:feederr/models/app_theme.dart';
-import 'package:feederr/providers/theme_provider.dart';
-import 'package:feederr/widgets/theme_preview.dart';
+import 'package:blazefeeds/models/app_theme.dart';
+import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/widgets/theme_preview.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -194,9 +194,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               context,
                               // We use the dialogSelectColor, as its starting color.
                               Color(themeProvider.theme.primaryColor),
-                              title: Text('Colors',
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
+                              title: Text('Colors', style: Theme.of(context).textTheme.titleLarge),
                               width: 40,
                               height: 40,
                               spacing: 0,
@@ -209,8 +207,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               pickersEnabled: <ColorPickerType, bool>{
                                 ColorPickerType.wheel: true,
                               },
-                              copyPasteBehavior:
-                                  const ColorPickerCopyPasteBehavior(
+                              copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                                 copyButton: true,
                                 pasteButton: true,
                                 longPressMenu: false,
@@ -223,8 +220,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               constraints: const BoxConstraints(
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
-                            themeProvider.updateTheme(
-                                'primaryColor', newColor.value32bit);
+                            themeProvider.updateTheme('primaryColor', newColor.value32bit);
                           }),
                     ),
                     IgnorePointer(
@@ -391,9 +387,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               context,
                               // We use the dialogSelectColor, as its starting color.
                               Color(themeProvider.theme.surfaceColor),
-                              title: Text('Colors',
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
+                              title: Text('Colors', style: Theme.of(context).textTheme.titleLarge),
                               width: 40,
                               height: 40,
                               spacing: 0,
@@ -406,8 +400,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               pickersEnabled: <ColorPickerType, bool>{
                                 ColorPickerType.wheel: true,
                               },
-                              copyPasteBehavior:
-                                  const ColorPickerCopyPasteBehavior(
+                              copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                                 copyButton: true,
                                 pasteButton: true,
                                 longPressMenu: false,
@@ -421,8 +414,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
                             // themeProvider.theme.surfaceColor = newColor.value;
-                            themeProvider.updateTheme(
-                                'surfaceColor', newColor.value);
+                            themeProvider.updateTheme('surfaceColor', newColor.value);
                             // MyApp.updateTheme(context);
                           }),
                     ),
@@ -484,8 +476,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               child: Icon(
                                 Icons.check,
                                 size: 30,
-                                color:
-                                    Color(themeProvider.theme.secondaryColor),
+                                color: Color(themeProvider.theme.secondaryColor),
                               ),
                             )
                           : Container(),
@@ -578,9 +569,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               context,
                               // We use the dialogSelectColor, as its starting color.
                               Color(themeProvider.theme.textColor),
-                              title: Text('Colors',
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
+                              title: Text('Colors', style: Theme.of(context).textTheme.titleLarge),
                               width: 40,
                               height: 40,
                               spacing: 0,
@@ -593,8 +582,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               pickersEnabled: <ColorPickerType, bool>{
                                 ColorPickerType.wheel: true,
                               },
-                              copyPasteBehavior:
-                                  const ColorPickerCopyPasteBehavior(
+                              copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                                 copyButton: true,
                                 pasteButton: true,
                                 longPressMenu: false,
@@ -608,8 +596,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
                             // themeProvider.theme.textColor = newColor.value;
-                            themeProvider.updateTheme(
-                                'textColor', newColor.value);
+                            themeProvider.updateTheme('textColor', newColor.value);
                             // MyApp.updateTheme(context);
                           }),
                     ),
@@ -765,9 +752,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               context,
                               // We use the dialogSelectColor, as its starting color.
                               Color(themeProvider.theme.secondaryColor),
-                              title: Text('Colors',
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
+                              title: Text('Colors', style: Theme.of(context).textTheme.titleLarge),
                               width: 40,
                               height: 40,
                               spacing: 0,
@@ -780,8 +765,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                               pickersEnabled: <ColorPickerType, bool>{
                                 ColorPickerType.wheel: true,
                               },
-                              copyPasteBehavior:
-                                  const ColorPickerCopyPasteBehavior(
+                              copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                                 copyButton: true,
                                 pasteButton: true,
                                 longPressMenu: false,
@@ -795,8 +779,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                                   minHeight: 480, minWidth: 300, maxWidth: 300),
                             );
                             // themeProvider.theme.secondaryColor = newColor.value;
-                            themeProvider.updateTheme(
-                                'secondaryColor', newColor.value);
+                            themeProvider.updateTheme('secondaryColor', newColor.value);
                             // MyApp.updateTheme(context);
                           }),
                     ),
