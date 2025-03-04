@@ -1,0 +1,2 @@
+/Users/nikhilpatil/Documents/Personal projects/feederr/android/app/.cxx/Debug/1m303s5e/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/nikhilpatil/Documents/Personal projects/feederr/android/app/.cxx/Debug/1m303s5e/armeabi-v7a/CMakeFiles/rebuild_cache.dir

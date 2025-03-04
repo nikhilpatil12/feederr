@@ -12,15 +12,21 @@ class Status extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = Provider.of<StatusProvider>(context).status;
     final themeProvider = Provider.of<ThemeProvider>(context);
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(status),
-      status != ""
-          ? CupertinoActivityIndicator(
-              color: Color(themeProvider.theme.primaryColor),
-              radius: 10,
-            )
-          : Container()
-    ]);
-    // return Text(statusProvider.status);
+    return AnimatedCrossFade(
+      duration: const Duration(milliseconds: 300),
+      crossFadeState: status.isEmpty ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+      secondChild: Container(),
+      firstChild: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(status,
+            style: TextStyle(
+              fontSize: 12,
+              fontVariations: [FontVariation.weight(300)],
+            )),
+        CupertinoActivityIndicator(
+          color: Color(themeProvider.theme.primaryColor),
+          radius: 10,
+        )
+      ]),
+    );
   }
 }

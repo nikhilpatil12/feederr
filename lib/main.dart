@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'dart:typed_data';
-
 import 'package:blazefeeds/models/font_settings.dart';
 import 'package:blazefeeds/providers/api_provider.dart';
 import 'package:blazefeeds/providers/font_provider.dart';
@@ -33,7 +30,7 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final ThemeProvider themeProvider;
   final FontProvider fontProvider;
   final ApiProvider apiProvider;
@@ -45,26 +42,42 @@ class MyApp extends StatelessWidget {
   });
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    widget.themeProvider.loadTheme();
+    widget.fontProvider.loadSettings();
+    widget.apiProvider.loadApiKey();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Builder(builder: (context) {
-      themeProvider.loadTheme();
-      fontProvider.loadSettings();
-      apiProvider.loadApiKey();
-
       return MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => themeProvider),
-          ChangeNotifierProvider(create: (_) => fontProvider),
-          ChangeNotifierProvider(create: (_) => apiProvider),
+          ChangeNotifierProvider(create: (_) => widget.themeProvider),
+          ChangeNotifierProvider(create: (_) => widget.fontProvider),
+          ChangeNotifierProvider(create: (_) => widget.apiProvider),
           ChangeNotifierProvider(create: (_) => LatestArticleNotifier()),
           ChangeNotifierProvider(create: (_) => StatusProvider()),
         ],
         child: Selector<ThemeProvider, AppTheme>(
           selector: (_, themeProvider) => themeProvider.theme,
           builder: (_, theme, __) {
+            final luminanceDifference = Color(theme.primaryColor).computeLuminance() -
+                Color(theme.textColor).computeLuminance();
             // ThemeData themeData = theme.isDark
             //     ? ThemeData.from()
             //     : ThemeData.light();
+            ThemeData inspo = ThemeData(
+              useMaterial3: true,
+              colorSchemeSeed: Color(theme.primaryColor),
+              // brightness: theme.isDark ? Brightness.dark : Brightness.light,
+            );
             ThemeData themeData = ThemeData(
               canvasColor: Color(theme.surfaceColor),
               splashColor: Colors.transparent,
@@ -78,18 +91,87 @@ class MyApp extends StatelessWidget {
                   Color(theme.primaryColor),
                 ),
               ),
+              fontFamily: 'General Sans',
+              textTheme: TextTheme(
+                displayLarge: TextStyle(
+                  fontSize: 48,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                displayMedium: TextStyle(
+                  fontSize: 36,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                displaySmall: TextStyle(
+                  fontSize: 24,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                headlineLarge: TextStyle(
+                  fontSize: 17,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                headlineMedium: TextStyle(
+                  fontSize: 15,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                headlineSmall: TextStyle(
+                  fontSize: 13,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                titleLarge: TextStyle(
+                  fontSize: 28,
+                  fontVariations: const [
+                    FontVariation('wght', 500),
+                  ],
+                ),
+                titleMedium: TextStyle(
+                  fontSize: 26,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                titleSmall: TextStyle(
+                  fontSize: 24,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                bodyLarge: TextStyle(
+                  fontSize: 17,
+                  fontVariations: const [
+                    FontVariation('wght', 500),
+                  ],
+                ),
+                bodyMedium: TextStyle(
+                  fontSize: 17,
+                  fontVariations: const [
+                    FontVariation('wght', 500),
+                  ],
+                ),
+                bodySmall: TextStyle(
+                  fontSize: 13,
+                  fontVariations: const [
+                    FontVariation('wght', 500),
+                  ],
+                ),
+                labelLarge: TextStyle(
+                  fontSize: 12,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                labelMedium: TextStyle(
+                  fontSize: 11,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+                labelSmall: TextStyle(
+                  fontSize: 10,
+                  fontVariations: const [FontVariation('wght', 500)],
+                ),
+              ),
               colorScheme: ColorScheme(
                 primary: Color(theme.primaryColor),
-                brightness: theme.isDark ? Brightness.dark : Brightness.light,
-                onPrimary: Color(theme.primaryColor).computeLuminance() -
-                            Color(theme.textColor).computeLuminance() >=
-                        0.3
-                    ? Color(theme.textColor)
-                    : Color(theme.surfaceColor),
+                // brightness: theme.isDark ? Brightness.dark : Brightness.light,
+                brightness: Brightness.dark,
+                onPrimary:
+                    luminanceDifference >= 0.3 ? Color(theme.textColor) : Color(theme.surfaceColor),
                 secondary: Color(theme.secondaryColor),
-                onSecondary: Color.fromRGBO(255, 0, 183, 1),
-                error: Color.fromRGBO(205, 0, 0, 1),
-                onError: Color.fromRGBO(255, 255, 255, 1),
+                onSecondary: inspo.colorScheme.onSecondary,
+                error: inspo.colorScheme.error,
+                onError: inspo.colorScheme.onError,
                 surface: Color(theme.surfaceColor),
                 // surfaceContainer: Color(theme.surfaceColor),
                 // surfaceDim: Color(theme.surfaceColor),
@@ -97,14 +179,23 @@ class MyApp extends StatelessWidget {
                 onSurface: Color(theme.textColor),
                 // primaryContainer: Color(theme.surfaceColor),
               ),
-              pageTransitionsTheme: const PageTransitionsTheme(
+              pageTransitionsTheme: PageTransitionsTheme(
                 builders: {
-                  // Use PredictiveBackPageTransitionsBuilder to get the predictive back route transition!
-                  TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+                  TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+                  TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+                  // You can mix and match with other platforms
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
                 },
               ),
+              // const PageTransitionsTheme(
+              //   builders: {
+              //     // Use PredictiveBackPageTransitionsBuilder to get the predictive back route transition!
+              //     TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+              //   },
+              // ),
             );
             return MaterialApp(
+              // Hides the debug banner in the top right corner of the app
               debugShowCheckedModeBanner: false,
               title: "Blaze Feeds",
               theme: themeData,

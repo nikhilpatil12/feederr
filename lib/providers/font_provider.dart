@@ -20,10 +20,10 @@ class FontProvider extends ChangeNotifier {
 
   Future<void> loadSettings() async {
     String articleFont = _prefs.getString('articleFont') ?? "Chillax";
-    double titleFontSize = _prefs.getDouble('titleFontSize') ?? 36;
+    double titleFontSize = _prefs.getDouble('titleFontSize') ?? 28;
     String titleAlignmentStr = _prefs.getString('titleAlignment') ?? "left";
 
-    double articleFontSize = _prefs.getDouble('articleFontSize') ?? 20;
+    double articleFontSize = _prefs.getDouble('articleFontSize') ?? 17;
     String articleAlignmentStr = _prefs.getString('articleAlignment') ?? "left";
     double articleLineSpacing = _prefs.getDouble('articleLineSpacing') ?? 1.5;
     double articleContentWidth = _prefs.getDouble('articleContentWidth') ?? 5;

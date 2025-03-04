@@ -153,7 +153,7 @@ class _ArticleViewState extends State<ArticleView> {
                                         style: TextStyle(
                                           fontSize: fontProvider.fontSettings.titleFontSize,
                                           fontFamily: fontProvider.fontSettings.articleFont,
-                                          fontVariations: const [FontVariation('wght', 600)],
+                                          fontVariations: const [FontVariation('wght', 700)],
                                           color: Color(themeProvider.theme.textColor),
                                         ),
                                       ),
@@ -239,7 +239,7 @@ class _ArticleViewState extends State<ArticleView> {
                                     //     return null;
                                     //   },
                                     //   renderMode: RenderMode.column,
-                                    //   textStyle: TextStyle(fontSize: 14),
+                                    //   textStyle: TextStyle(fontSize: 17),
                                     //   customStylesBuilder: (element) {
                                     //     if (element.attributes.containsKey("href")) {
                                     //       return {
@@ -539,7 +539,7 @@ class _ArticleViewState extends State<ArticleView> {
           case 'h6':
             children.add(TextSpan(
               text: "\n${node.text}\n",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ));
             break;
           case 'b':
@@ -552,7 +552,7 @@ class _ArticleViewState extends State<ArticleView> {
             children.add(TextSpan(
               text: "${node.text}\n",
               style: const TextStyle(
-                  fontStyle: FontStyle.italic, fontWeight: FontWeight.w500, fontSize: 14),
+                  fontStyle: FontStyle.italic, fontWeight: FontWeight.w500, fontSize: 17),
             ));
             break;
           case 'em':

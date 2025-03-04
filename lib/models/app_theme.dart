@@ -9,7 +9,7 @@ class AppTheme {
   // int textHighlightColor;
 
   int surfaceColor;
-  bool isDark;
+  // bool isDark;
 
   AppTheme({
     this.primaryColor = 0xFF00E731,
@@ -17,7 +17,7 @@ class AppTheme {
     this.textColor = 0xFFFFFFFF,
     // required this.textHighlightColor,
     this.surfaceColor = 0xFF000433,
-    this.isDark = true,
+    // this.isDark = true,
   });
 
   AppTheme copyWith({
@@ -25,14 +25,14 @@ class AppTheme {
     int? secondaryColor,
     int? surfaceColor,
     int? textColor,
-    bool? isDark,
+    // bool? isDark,
   }) {
     return AppTheme(
       primaryColor: primaryColor ?? this.primaryColor,
       secondaryColor: secondaryColor ?? this.secondaryColor,
       surfaceColor: surfaceColor ?? this.surfaceColor,
       textColor: textColor ?? this.textColor,
-      isDark: isDark ?? this.isDark,
+      // isDark: isDark ?? this.isDark,
     );
   }
 }

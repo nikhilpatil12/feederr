@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -37,8 +39,12 @@ class CustomWebViewState extends State<CustomWebView> {
           },
           onPageStarted: (String url) {},
           onPageFinished: (String url) {},
-          onHttpError: (HttpResponseError error) {},
-          onWebResourceError: (WebResourceError error) {},
+          onHttpError: (HttpResponseError error) {
+            log('Web resource error: ${error.response}');
+          },
+          onWebResourceError: (WebResourceError error) {
+            log('Web resource error: ${error.description}');
+          },
           onNavigationRequest: (NavigationRequest request) {
             if (request.url.startsWith('https://www.youtube.com/')) {
               return NavigationDecision.prevent;

@@ -131,6 +131,7 @@ class _LocalFeedListItemState extends State<LocalFeedListItem> {
                         key: Key(localFeedProvider.feed.feedUrl.baseUrl),
                         // Specify a key if the Slidable is dismissible.
                         endActionPane: ActionPane(
+                          extentRatio: 0.3,
                           motion: const ScrollMotion(),
                           children: [
                             Theme(
@@ -212,78 +213,95 @@ class _FeedDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ThemeProvider, AppTheme>(
-        selector: (_, themeProvider) => themeProvider.theme,
-        builder: (_, theme, __) {
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Flexible(
-                  fit: FlexFit.tight,
-                  child: FutureBuilder(
-                    future: _loadImage(feed.feed.iconUrl, theme),
-                    builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Image.asset(
-                          "assets/rss-16.png",
-                          color: Color(theme.textColor),
-                        );
-                      } else if (snapshot.hasError) {
-                        return Image.asset("assets/rss-16.png", color: Color(theme.textColor));
-                      } else if (snapshot.hasData) {
-                        return snapshot.data!; // The built widget
-                      } else {
-                        return Image.asset("assets/rss-16.png", color: Color(theme.textColor));
-                      }
-                    },
+    ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Flexible(
+            fit: FlexFit.tight,
+            child: FutureBuilder(
+              future: _loadImage(feed.feed.iconUrl, theme),
+              builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Image.asset(
+                    "assets/rss-16.png",
+                    color: theme.colorScheme.onSurface,
+                  );
+                } else if (snapshot.hasError) {
+                  return Image.asset(
+                    "assets/rss-16.png",
+                    color: theme.colorScheme.onSurface,
+                  );
+                } else if (snapshot.hasData) {
+                  return snapshot.data!; // The built widget
+                } else {
+                  return Image.asset(
+                    "assets/rss-16.png",
+                    color: theme.colorScheme.onSurface,
+                  );
+                }
+              },
+            ),
+          ),
+          const Padding(padding: EdgeInsets.only(left: 10)),
+          Flexible(
+            flex: 10,
+            fit: FlexFit.tight,
+            child: Text(
+              feed.feed.title,
+              style: TextStyle(
+                // fontWeight: FontWeight.w500,
+                fontSize: 14.0,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          // const Spacer(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+            child: Wrap(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor,
+                    borderRadius: const BorderRadius.all(Radius.circular(20)),
+                    // border: Border.all(
+                    //   width: 1,
+                    //   color: Color(theme.textColor),
+                    // ),
                   ),
-                ),
-                const Padding(padding: EdgeInsets.only(left: 10)),
-                Flexible(
-                  flex: 10,
-                  fit: FlexFit.tight,
                   child: Text(
-                    feed.feed.title,
+                    feed.articles.length.toString(),
+                    textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14.0,
-                      color: Color(theme.textColor),
+                      color: theme.colorScheme.surface,
+                      fontSize: 15,
+                      fontVariations: [FontVariation.weight(500)],
                     ),
                   ),
                 ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
-                  child: Wrap(
-                    children: [
-                      Text(
-                        feed.articles.length.toString(),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: Color(theme.primaryColor),
-                        ),
-                      ),
-                      Icon(
-                        size: 20,
-                        CupertinoIcons.right_chevron,
-                        color: Color(theme.primaryColor),
-                      ),
-                    ],
-                  ),
-                ),
+                // Icon(
+                //   size: 20,
+                //   CupertinoIcons.right_chevron,
+                //   color: theme.primaryColor,
+                // ),
               ],
-              // Icon(
-              //   CupertinoIcons.right_chevron,
-              //   color: const Color.fromRGBO(76, 2, 232, 1),
-              // ),
             ),
-          );
-        });
+          ),
+        ],
+        // Icon(
+        //   CupertinoIcons.right_chevron,
+        //   color: const Color.fromRGBO(76, 2, 232, 1),
+        // ),
+      ),
+    );
   }
 
-  Future<Widget> _loadImage(String src, AppTheme theme) async {
+  Future<Widget> _loadImage(String src, ThemeData theme) async {
     try {
       var response = await http.get(Uri.parse(src));
       if (response.statusCode == 200) {
@@ -298,17 +316,25 @@ class _FeedDetails extends StatelessWidget {
             imageUrl: feed.feed.iconUrl,
             progressIndicatorBuilder: (context, url, downloadProgress) =>
                 const CupertinoActivityIndicator(),
-            errorWidget: (context, url, error) =>
-                Image.asset("assets/rss-16.png", color: Color(theme.textColor)),
+            errorWidget: (context, url, error) => Image.asset(
+              "assets/rss-16.png",
+              color: theme.colorScheme.onSurface,
+            ),
           );
         }
       } else {
         // Handle error
-        return Image.asset("assets/rss-16.png", color: Color(theme.textColor));
+        return Image.asset(
+          "assets/rss-16.png",
+          color: theme.colorScheme.onSurface,
+        );
       }
     } catch (error) {
       // Handle error
-      return Image.asset("assets/rss-16.png", color: Color(theme.textColor));
+      return Image.asset(
+        "assets/rss-16.png",
+        color: theme.colorScheme.onSurface,
+      );
     }
   }
 }
@@ -331,8 +357,6 @@ void showFeed(
         return ArticleList(
           refreshParent: refreshAllCallback,
           articles: convertLocalArticlesToArticles(feed.articles),
-          api: api,
-          databaseService: databaseService,
           title: feed.feed.title,
         );
       },

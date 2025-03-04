@@ -30,7 +30,7 @@ class BackupSettings extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         title: Text(
-          'Appearance',
+          'Backup',
           overflow: TextOverflow.fade,
         ),
       ),

@@ -1,8 +1,11 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:ui';
 
 import 'package:blazefeeds/pages/settings/custom_theme.dart';
 import 'package:blazefeeds/providers/font_provider.dart';
 import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:blazefeeds/widgets/theme_preview.dart';
@@ -20,26 +23,27 @@ class AppearanceSettings extends StatefulWidget {
 }
 
 class AppearanceSettingsState extends State<AppearanceSettings> {
-  List<String> fonts = [
-    "Cabinet Grotesk",
-    "Chillax",
-    "Comico",
-    "Clash Grotesk",
-    "General Sans",
-    "New Title",
-    "Supreme"
-  ];
+  List<String> fonts = [];
+  late final AppUtils utils;
+  @override
+  void initState() {
+    super.initState();
+    utils = AppUtils(); // Using singleton instance
+    initializeFonts();
+  }
 
-  // String articleFont = "Chillax";
-  // double titleFontSize = 20;
-  // String titleAlignment = "left";
-
-  // double articleFontSize = 12;
-  // String articleAlignment = "left";
-  // double articleLineSpacing = 1.5;
-  // double articleContentWidth = 5;
-
-  // final SharedPreferencesAsync asyncPrefs = SharedPreferencesAsync();
+  Future<void> initializeFonts() async {
+    try {
+      List<String> loadedFonts = await utils.loadFonts();
+      setState(() {
+        fonts = loadedFonts; // Update UI after loading fonts
+      });
+    } catch (e) {
+      // Handle the exception, e.g., log it or show a message to the user
+      fonts = [];
+      log('Failed to load fonts: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,8 +98,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     onTap: () async {
                       themeProvider.updateTheme('surfaceColor', 0xff000000);
                       themeProvider.updateTheme('textColor', 0xffffffff);
-                      themeProvider.updateTheme('secondaryColor', 0xff000000);
-                      themeProvider.updateTheme('isDarkMode', true);
+                      themeProvider.updateTheme('secondaryColor', 0xff0f0f0f);
+                      // themeProvider.updateTheme('isDarkMode', true);
                       // setState(() {
                       //   themeProvider.theme.surfaceColor = 0xff000000;
                       //   themeProvider.theme.textColor = 0xffffffff;
@@ -120,10 +124,10 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                 ThemePreview(
                                   theme: AppTheme(
                                     primaryColor: themeProvider.theme.primaryColor,
-                                    secondaryColor: 0xff000000,
+                                    secondaryColor: 0xff0f0f0f,
                                     surfaceColor: 0xff000000,
                                     textColor: 0xffffffff,
-                                    isDark: true,
+                                    // isDark: true,
                                   ),
                                 ),
                                 Container(
@@ -147,8 +151,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     onTap: () async {
                       themeProvider.updateTheme('surfaceColor', 0xff1f1f1f);
                       themeProvider.updateTheme('textColor', 0xffffffff);
-                      themeProvider.updateTheme('secondaryColor', 0xff000000);
-                      themeProvider.updateTheme('isDarkMode', true);
+                      themeProvider.updateTheme('secondaryColor', 0xff262626);
+                      // themeProvider.updateTheme('isDarkMode', true);
                     },
                     child: Container(
                       decoration: themeProvider.theme.surfaceColor == 0xff1f1f1f
@@ -169,10 +173,10 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                 ThemePreview(
                                   theme: AppTheme(
                                     primaryColor: themeProvider.theme.primaryColor,
-                                    secondaryColor: 0xff000000,
+                                    secondaryColor: 0xff262626,
                                     surfaceColor: 0xff0f0f0f,
                                     textColor: 0xffffffff,
-                                    isDark: true,
+                                    // isDark: true,
                                   ),
                                 ),
                                 Container(
@@ -196,8 +200,8 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                     onTap: () async {
                       themeProvider.updateTheme('surfaceColor', 0xffffffff);
                       themeProvider.updateTheme('textColor', 0xff1f1f1f);
-                      themeProvider.updateTheme('secondaryColor', 0xffffffff);
-                      themeProvider.updateTheme('isDarkMode', false);
+                      themeProvider.updateTheme('secondaryColor', 0xfff2f2f2);
+                      // themeProvider.updateTheme('isDarkMode', false);
 
                       // themeProvider.theme.surfaceColor = 0xffffffff;
                     },
@@ -220,10 +224,10 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                                 ThemePreview(
                                     theme: AppTheme(
                                   primaryColor: themeProvider.theme.primaryColor,
-                                  secondaryColor: 0xffffffff,
+                                  secondaryColor: 0xfff2f2f2,
                                   surfaceColor: 0xffffffff,
                                   textColor: 0xff000000,
-                                  isDark: false,
+                                  // isDark: false,
                                 )),
                                 Container(
                                   height: 25,
@@ -290,7 +294,7 @@ class AppearanceSettingsState extends State<AppearanceSettings> {
                               secondaryColor: 0xff00003b,
                               surfaceColor: 0xff000098,
                               textColor: 0xffffffff,
-                              isDark: true,
+                              // isDark: true,
                             ),
                           ),
                           Container(

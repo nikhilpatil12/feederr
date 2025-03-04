@@ -35,8 +35,8 @@ dependencies:
   animations: ^2.0.2
   persistent_bottom_nav_bar: ^6.2.1
   dio: ^5.5.0+1
-  sqflite: ^2.4.1
-  flutter_widget_from_html: ^0.15.1
+  sqflite: ^2.4.2
+  flutter_widget_from_html: ^0.16.0
   html: ^0.15.4
   path_provider: ^2.1.3
   webview_flutter: ^4.10.0
@@ -54,7 +54,7 @@ dependencies:
   xml: ^6.5.0
   intl: ^0.19.0
   flutter_cache_manager: ^3.4.1
-  file_picker: ^8.3.1
+  file_picker: ^9.0.0
   pointycastle: ^3.9.1
   encrypt: ^5.0.3
 
@@ -83,6 +83,7 @@ flutter:
   assets:
     - assets/FeederrSplash.png
     - assets/rss-16.png
+    - assets/fonts.json
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -100,28 +101,50 @@ flutter:
     - family: Cabinet Grotesk
       fonts:
         - asset: assets/fonts/CabinetGrotesk-Variable.ttf
+          weight: 400
+
     - family: Chillax
       fonts:
         - asset: assets/fonts/Chillax-Variable.ttf
+          weight: 400
+
     - family: Clash Grotesk
       fonts:
         - asset: assets/fonts/ClashGrotesk-Variable.ttf
-    - family: Comico
-      fonts:
-        - asset: assets/fonts/Comico-Regular.otf
+          weight: 400
+
     - family: General Sans
       fonts:
         - asset: assets/fonts/GeneralSans-Variable.ttf
+          weight: 400
         - asset: assets/fonts/GeneralSans-VariableItalic.ttf
           style: italic
-    - family: New Title
+
+    - family: Caveat
       fonts:
-        - asset: assets/fonts/NewTitle-Variable.ttf
+        - asset: assets/fonts/Caveat-VariableFont_wght.ttf
+          weight: 400
+
     - family: Supreme
       fonts:
         - asset: assets/fonts/Supreme-Variable.ttf
+          weight: 400
         - asset: assets/fonts/Supreme-VariableItalic.ttf
           style: italic
+
+    - family: Fast Sans
+      fonts:
+        - asset: assets/fonts/Fast_Sans.ttf
+
+    - family: Fira Code
+      fonts:
+        - asset: assets/fonts/FiraCode-VariableFont_wght.ttf
+          weight: 400
+
+    - family: Roboto Flex
+      fonts:
+        - asset: assets/fonts/RobotoFlex-VariableFont.ttf
+          weight: 400
 
   #
   # For details regarding fonts from package dependencies,

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:blazefeeds/providers/status_provider.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart';
@@ -163,5 +165,11 @@ class AppUtils {
 
   void showStatus(BuildContext context, String newStatus) async {
     Provider.of<StatusProvider>(context, listen: false).updateStatus(newStatus);
+  }
+
+  Future<List<String>> loadFonts() async {
+    final String jsonString = await rootBundle.loadString('assets/fonts.json');
+    final Map<String, dynamic> jsonData = json.decode(jsonString);
+    return List<String>.from(jsonData['fonts']);
   }
 }

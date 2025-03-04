@@ -1,3 +1,4 @@
+import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:blazefeeds/models/server.dart';
 import 'package:blazefeeds/utils/apiservice.dart';
@@ -5,6 +6,7 @@ import 'package:blazefeeds/widgets/server_form.dart';
 import 'package:blazefeeds/utils/dbhelper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ServerList extends StatefulWidget {
   const ServerList({
@@ -86,7 +88,31 @@ class ServerListState extends State<ServerList> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
+      // extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
+        elevation: 0,
+        title: Text(
+          'Accounts',
+          style: TextStyle(
+            color: Color(themeProvider.theme.textColor),
+          ),
+          overflow: TextOverflow.fade,
+        ),
+        // flexibleSpace: ClipRect(
+        //   child: BackdropFilter(
+        //     filter: ImageFilter.blur(
+        //       sigmaX: 36,
+        //       sigmaY: 36,
+        //     ),
+        //     child: Container(
+        //       color: Colors.transparent,
+        //     ),
+        //   ),
+        // ),
+      ),
       body: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.max,

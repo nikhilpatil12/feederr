@@ -13,9 +13,9 @@ class FontSettings {
 
   FontSettings({
     this.articleFont = "Chillax",
-    this.titleFontSize = 20,
+    this.titleFontSize = 28,
     this.titleAlignment = TextAlign.left,
-    this.articleFontSize = 12,
+    this.articleFontSize = 17,
     this.articleAlignment = TextAlign.left,
     this.articleLineSpacing = 1.5,
     this.articleContentWidth = 5,

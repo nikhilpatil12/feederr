@@ -164,7 +164,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
           case 'h6':
             children.add(TextSpan(
               text: "\n${node.text}\n",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ));
             break;
           case 'b':
@@ -177,7 +177,7 @@ class _ArticlePreViewState extends State<ArticlePreView> {
             children.add(TextSpan(
               text: "${node.text}\n",
               style: const TextStyle(
-                  fontStyle: FontStyle.italic, fontWeight: FontWeight.w500, fontSize: 14),
+                  fontStyle: FontStyle.italic, fontWeight: FontWeight.w500, fontSize: 17),
             ));
             break;
           case 'em':

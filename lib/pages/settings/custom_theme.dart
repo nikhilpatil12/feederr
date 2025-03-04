@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:blazefeeds/models/app_theme.dart';
 import 'package:blazefeeds/providers/theme_provider.dart';
+import 'package:blazefeeds/utils/utils.dart';
 import 'package:blazefeeds/widgets/theme_preview.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -16,26 +19,27 @@ class CustomThemeSettings extends StatefulWidget {
 }
 
 class CustomThemeSettingsState extends State<CustomThemeSettings> {
-  List<String> fonts = [
-    "Cabinet Grotesk",
-    "Chillax",
-    "Comico",
-    "Clash Grotesk",
-    "General Sans",
-    "New Title",
-    "Supreme"
-  ];
+  List<String> fonts = [];
+  late final AppUtils utils;
+  @override
+  void initState() {
+    super.initState();
+    utils = AppUtils(); // Using singleton instance
+    initializeFonts();
+  }
 
-  // String articleFont = "Chillax";
-  // double titleFontSize = 20;
-  // String titleAlignment = "left";
-
-  // double articleFontSize = 12;
-  // String articleAlignment = "left";
-  // double articleLineSpacing = 1.5;
-  // double articleContentWidth = 5;
-
-  // final SharedPreferencesAsync asyncPrefs = SharedPreferencesAsync();
+  Future<void> initializeFonts() async {
+    try {
+      List<String> loadedFonts = await utils.loadFonts();
+      setState(() {
+        fonts = loadedFonts; // Update UI after loading fonts
+      });
+    } catch (e) {
+      // Handle the exception, e.g., log it or show a message to the user
+      fonts = [];
+      log('Failed to load fonts: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +68,7 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
                     secondaryColor: themeProvider.theme.secondaryColor,
                     surfaceColor: themeProvider.theme.surfaceColor,
                     textColor: themeProvider.theme.textColor,
-                    isDark: true,
+                    // isDark: true,
                   ),
                 ),
               ),
@@ -811,17 +815,17 @@ class CustomThemeSettingsState extends State<CustomThemeSettings> {
           //     // onTap: () { setState(() { _lights = !_lights; }); },
           //   ),
           // ),
-          ListTile(
-            leading: const Icon(CupertinoIcons.sun_haze),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
-            title: const Text('Dark Mode'),
-            trailing: Switch(
-                value: themeProvider.theme.isDark,
-                onChanged: (v) {
-                  themeProvider.updateTheme('isDarkMode', v);
-                }),
-          ),
+          // ListTile(
+          //   leading: const Icon(CupertinoIcons.sun_haze),
+          //   iconColor: Color(themeProvider.theme.textColor),
+          //   textColor: Color(themeProvider.theme.textColor),
+          //   title: const Text('Dark Mode'),
+          //   trailing: Switch(
+          //       value: themeProvider.theme.isDark,
+          //       onChanged: (v) {
+          //         themeProvider.updateTheme('isDarkMode', v);
+          //       }),
+          // ),
 
           // SegmentedButton(segments: segments, selected: selected)
         ],

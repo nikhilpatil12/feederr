@@ -6,11 +6,9 @@ import 'package:blazefeeds/pages/settings/appearance.dart';
 import 'package:blazefeeds/pages/settings/backup.dart';
 import 'package:blazefeeds/utils/apiservice.dart';
 import 'package:blazefeeds/utils/dbhelper.dart';
-import 'package:blazefeeds/providers/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
 class Settings extends StatefulWidget {
   Settings({
@@ -26,17 +24,17 @@ class Settings extends StatefulWidget {
 class SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = Theme.of(context);
     //TODO: Settings
     return Scaffold(
       // extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
+        backgroundColor: theme.colorScheme.surface.withAlpha(90),
         elevation: 0,
         title: Text(
           'Settings',
           style: TextStyle(
-            color: Color(themeProvider.theme.textColor),
+            color: theme.colorScheme.onSurface,
           ),
           overflow: TextOverflow.fade,
         ),
@@ -56,10 +54,14 @@ class SettingsState extends State<Settings> {
         scrollDirection: Axis.vertical,
         children: <Widget>[
           ListTile(
-            leading: const CircleAvatar(child: Icon(CupertinoIcons.person)),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
-            title: const Text('Accounts'),
+            leading: Icon(
+              CupertinoIcons.person,
+              size: 40,
+            ),
+            iconColor: theme.colorScheme.onSurface,
+            textColor: theme.colorScheme.onSurface,
+            title: const Text('Accounts',
+                style: TextStyle(fontVariations: [FontVariation.weight(500)])),
             trailing: const Icon(CupertinoIcons.right_chevron),
             onTap: () {
               HapticFeedback.lightImpact();
@@ -67,43 +69,21 @@ class SettingsState extends State<Settings> {
                 context,
                 MaterialPageRoute(
                   builder: (BuildContext context) {
-                    return Scaffold(
-                      // extendBodyBehindAppBar: true,
-                      appBar: AppBar(
-                        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
-                        elevation: 0,
-                        title: Text(
-                          'Accounts',
-                          style: TextStyle(
-                            color: Color(themeProvider.theme.textColor),
-                          ),
-                          overflow: TextOverflow.fade,
-                        ),
-                        // flexibleSpace: ClipRect(
-                        //   child: BackdropFilter(
-                        //     filter: ImageFilter.blur(
-                        //       sigmaX: 36,
-                        //       sigmaY: 36,
-                        //     ),
-                        //     child: Container(
-                        //       color: Colors.transparent,
-                        //     ),
-                        //   ),
-                        // ),
-                      ),
-                      body: ServerList(),
-                    );
+                    return ServerList();
                   },
                 ),
               );
             },
           ),
           ListTile(
-            leading: const CircleAvatar(child: Icon(CupertinoIcons.paintbrush)),
+            leading: Icon(
+              CupertinoIcons.paintbrush,
+              size: 40,
+            ),
             title: const Text('Appearance'),
             trailing: const Icon(CupertinoIcons.right_chevron),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
+            iconColor: theme.colorScheme.onSurface,
+            textColor: theme.colorScheme.onSurface,
             onTap: () {
               HapticFeedback.lightImpact();
               Navigator.push(
@@ -117,11 +97,15 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const CircleAvatar(child: Icon(CupertinoIcons.cloud)),
+            // contentPadding: EdgeInsets.symmetric(horizontal: 16),
+            leading: Icon(
+              CupertinoIcons.cloud,
+              size: 40,
+            ),
             title: const Text('Backup'),
             trailing: const Icon(CupertinoIcons.right_chevron),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
+            iconColor: theme.colorScheme.onSurface,
+            textColor: theme.colorScheme.onSurface,
             onTap: () {
               HapticFeedback.lightImpact();
               Navigator.push(
@@ -135,11 +119,14 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const CircleAvatar(child: Icon(CupertinoIcons.sparkles)),
+            leading: Icon(
+              CupertinoIcons.sparkles,
+              size: 40,
+            ),
             title: const Text('AI Summarization Settings'),
             trailing: const Icon(CupertinoIcons.right_chevron),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
+            iconColor: theme.colorScheme.onSurface,
+            textColor: theme.colorScheme.onSurface,
             onTap: () {
               HapticFeedback.lightImpact();
               Navigator.push(
@@ -149,12 +136,12 @@ class SettingsState extends State<Settings> {
                     return Scaffold(
                       // extendBodyBehindAppBar: true,
                       appBar: AppBar(
-                        backgroundColor: Color(themeProvider.theme.surfaceColor).withAlpha(56),
+                        backgroundColor: theme.colorScheme.surface.withAlpha(56),
                         elevation: 0,
                         title: Text(
                           'Summarization ',
                           style: TextStyle(
-                            color: Color(themeProvider.theme.textColor),
+                            color: theme.colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.fade,
                         ),
@@ -178,21 +165,27 @@ class SettingsState extends State<Settings> {
             },
           ),
           ListTile(
-            leading: const CircleAvatar(child: Icon(CupertinoIcons.list_dash)),
+            leading: Icon(
+              CupertinoIcons.list_dash,
+              size: 40,
+            ),
             title: const Text('List Styles'),
             trailing: const Icon(CupertinoIcons.right_chevron),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
+            iconColor: theme.colorScheme.onSurface,
+            textColor: theme.colorScheme.onSurface,
             onTap: () {
               HapticFeedback.lightImpact();
             },
           ),
           ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.info_outline)),
+            leading: Icon(
+              Icons.info_outline,
+              size: 40,
+            ),
             title: const Text('About'),
             trailing: const Icon(CupertinoIcons.right_chevron),
-            iconColor: Color(themeProvider.theme.textColor),
-            textColor: Color(themeProvider.theme.textColor),
+            iconColor: theme.colorScheme.onSurface,
+            textColor: theme.colorScheme.onSurface,
             onTap: () {
               HapticFeedback.lightImpact();
             },

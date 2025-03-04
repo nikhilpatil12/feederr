@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:core';
 import 'dart:developer';
+import 'dart:io';
 import 'dart:ui';
+import 'package:blazefeeds/widgets/searchbar.dart';
 import 'package:dart_rss/dart_rss.dart';
 import 'package:blazefeeds/models/article.dart';
 import 'package:blazefeeds/models/feed.dart';
@@ -532,199 +534,221 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   Widget build(BuildContext context) {
     PersistentTabController tabController;
     tabController = PersistentTabController(initialIndex: 1);
-
-    return Selector<ThemeProvider, AppTheme>(
-        selector: (_, themeProvider) => themeProvider.theme,
-        builder: (_, theme, __) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(
-                "Blaze Feeds",
-                style: TextStyle(
-                  color: Color(theme.primaryColor),
-                ),
+    ThemeData theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: theme.colorScheme.surface.withAlpha(128),
+        toolbarHeight: kToolbarHeight,
+        centerTitle: true,
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                child: child,
               ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(10.0),
-                child: Status(),
-              ),
-              actions: <Widget>[
-                MenuAnchor(
-                  controller: _menuController,
-                  onClose: _animationController.reset,
-                  onOpen: _animationController.forward,
-                  style: MenuStyle(
-                      shape: WidgetStatePropertyAll(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      backgroundColor: WidgetStatePropertyAll(Colors.transparent),
-                      side: WidgetStatePropertyAll(
-                        BorderSide(color: Color(theme.textColor).withAlpha(50)),
-                      ),
-                      elevation: WidgetStatePropertyAll(0),
-                      padding: WidgetStatePropertyAll(EdgeInsets.zero)),
-                  menuChildren: [
-                    SizeTransition(
-                      sizeFactor: _animationController,
-                      child: FadeTransition(
-                        opacity: _animationController,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                            child: Column(
-                              children: <Widget>[
-                                MenuItemButton(
-                                  onPressed: () {
-                                    HapticFeedback.mediumImpact();
-                                    _dialogBuilder(context, theme);
-                                  },
-                                  leadingIcon: Icon(Icons.rss_feed_outlined),
-                                  child: const Text('Add Feed'),
-                                ),
-                                Divider(
-                                  height: 1,
-                                  thickness: 0.5,
-                                  color: Color(theme.textColor).withAlpha(50),
-                                ),
-                                MenuItemButton(
-                                  leadingIcon: Icon(CupertinoIcons.person_add),
-                                  onPressed: () {
-                                    HapticFeedback.mediumImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (BuildContext context) {
-                                          return Scaffold(
-                                            appBar: AppBar(
-                                              backgroundColor:
-                                                  Color(theme.surfaceColor).withAlpha(56),
-                                              elevation: 0,
-                                              title: Text(
-                                                'Accounts',
-                                                style: TextStyle(
-                                                  color: Color(theme.textColor),
-                                                ),
-                                                overflow: TextOverflow.fade,
-                                              ),
-                                            ),
-                                            body: ServerList(),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
-                                  child: const Text('Add Accounts'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  child: IconButton(
-                    color: Color(theme.primaryColor),
-                    icon: const Icon(CupertinoIcons.add),
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    onPressed: () => {
-                      HapticFeedback.mediumImpact(),
-                      if (_animationController.status
-                          case AnimationStatus.forward || AnimationStatus.completed)
-                        {
-                          _animationController.reverse(),
-                        }
-                      else
-                        {
-                          _animationController.forward(),
-                        }
-                    },
+            );
+          },
+          child: context.watch<StatusProvider>().status.isEmpty
+              ? Text(
+                  "Blaze Feeds",
+                  key: ValueKey('title'),
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                  ),
+                )
+              : Status(key: ValueKey('status')),
+        ),
+        // bottom: PreferredSize(
+        //   preferredSize: Size.fromHeight(context.watch<StatusProvider>().status.isEmpty ? 0 : 20),
+        //   child: Padding(
+        //     padding: EdgeInsets.only(top: context.watch<StatusProvider>().status.isEmpty ? 0 : 20),
+        //     child: AnimatedContainer(
+        //       duration: const Duration(milliseconds: 200),
+        //       height: context.watch<StatusProvider>().status.isEmpty ? 0 : 20,
+        //       child: Status(),
+        //     ),
+        //   ),
+        // ),
+        actions: [
+          MenuAnchor(
+            controller: _menuController,
+            onClose: _animationController.reset,
+            onOpen: _animationController.forward,
+            style: MenuStyle(
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                IconButton(
-                    color: Color(theme.primaryColor),
-                    icon: const Icon(Icons.sync_sharp),
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      refreshFeeds();
-                    }),
-                IconButton(
-                  color: Color(theme.primaryColor),
-                  icon: const Icon(CupertinoIcons.settings_solid),
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (BuildContext context) {
-                          return Settings();
-                        },
+                backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+                side: WidgetStatePropertyAll(
+                  BorderSide(color: theme.colorScheme.onSurface.withAlpha(50)),
+                ),
+                elevation: WidgetStatePropertyAll(0),
+                padding: WidgetStatePropertyAll(EdgeInsets.zero)),
+            menuChildren: [
+              SizeTransition(
+                sizeFactor: _animationController,
+                child: FadeTransition(
+                  opacity: _animationController,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Column(
+                        children: <Widget>[
+                          MenuItemButton(
+                            onPressed: () {
+                              HapticFeedback.mediumImpact();
+                              _dialogBuilder(context, theme);
+                            },
+                            leadingIcon: Icon(Icons.rss_feed_outlined),
+                            child: const Text('Add Feed'),
+                          ),
+                          Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: theme.colorScheme.onSurface.withAlpha(50),
+                          ),
+                          MenuItemButton(
+                            leadingIcon: Icon(CupertinoIcons.person_add),
+                            onPressed: () {
+                              HapticFeedback.mediumImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (BuildContext context) {
+                                    return ServerList();
+                                  },
+                                ),
+                              );
+                            },
+                            child: const Text('Add Accounts'),
+                          ),
+                        ],
                       ),
-                    );
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            child: IconButton(
+              color: theme.colorScheme.primary,
+              icon: const Icon(CupertinoIcons.add),
+              splashColor: Colors.transparent,
+              iconSize: 25,
+              highlightColor: Colors.transparent,
+              onPressed: () => {
+                HapticFeedback.mediumImpact(),
+                if (_animationController.status
+                    case AnimationStatus.forward || AnimationStatus.completed)
+                  {
+                    _animationController.reverse(),
+                  }
+                else
+                  {
+                    _animationController.forward(),
+                  }
+              },
+            ),
+          ),
+          IconButton(
+              color: theme.colorScheme.primary,
+              icon: const Icon(Icons.sync_outlined),
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              iconSize: 25,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                refreshFeeds();
+              }),
+          IconButton(
+            color: theme.colorScheme.primary,
+            icon: const Icon(Icons.settings_outlined),
+            splashColor: Colors.transparent,
+            iconSize: 25,
+            highlightColor: Colors.transparent,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) {
+                    return Settings();
                   },
                 ),
-              ],
-            ),
-            body: PersistentTabView(
-              context,
-              decoration: NavBarDecoration(
-                border: Border.all(width: 0.5, color: Color(theme.textColor).withAlpha(128)),
-                borderRadius: BorderRadius.all(
-                  Radius.circular(20),
-                ),
-              ),
-              controller: tabController,
-              screens: _buildScreens(
-                refreshFeeds,
-                favServerCatogoriesProvider,
-                newServerCatogoriesProvider,
-                allServerCatogoriesProvider,
-                favFeedsProvider,
-                newFeedsProvider,
-                allFeedsProvider,
-                api,
-                databaseService,
-              ),
-              items: _navBarsItems(theme),
-              margin: EdgeInsets.only(
-                left: MediaQuery.sizeOf(context).width * 0.25,
-                right: MediaQuery.sizeOf(context).width * 0.25,
-                bottom: MediaQuery.sizeOf(context).height * 0.03,
-              ),
-              hideNavigationBarWhenKeyboardAppears: true,
-              // padding: const EdgeInsets.only(bottom: 8),
-              backgroundColor: Color(theme.secondaryColor),
-              isVisible: true,
-              animationSettings: const NavBarAnimationSettings(
-                navBarItemAnimation: ItemAnimationSettings(
-                  // Navigation Bar's items animation properties.
-                  duration: Duration(milliseconds: 300),
-                  curve: Curves.decelerate,
-                ),
-                screenTransitionAnimation: ScreenTransitionAnimationSettings(
-                  // Screen transition animation on change of selected tab.
-                  animateTabTransition: true,
-                  duration: Duration(milliseconds: 300),
-                  screenTransitionAnimationType: ScreenTransitionAnimationType.slide,
-                ),
-              ),
-              // confineToSafeArea: true,
-              navBarHeight: kBottomNavigationBarHeight,
-              navBarStyle: NavBarStyle
-                  .style12, // Choose the nav bar style with this property 3, 7, 9, 12,13 are fav
-            ),
-          );
-        });
+              );
+
+              // HapticFeedback.mediumImpact();
+              // Navigator.push(
+              //   context,
+              //   CupertinoPageRoute<void>(
+              //     builder: (BuildContext context) {
+              //       return Settings();
+              //     },
+              //   ),
+              // );
+            },
+          ),
+        ],
+      ),
+      body: PersistentTabView(
+        context,
+        decoration: NavBarDecoration(
+          border: Border.all(width: 0.5, color: theme.colorScheme.onSurface.withAlpha(128)),
+          borderRadius: BorderRadius.all(
+            Radius.circular(20),
+          ),
+        ),
+        controller: tabController,
+        screens: _buildScreens(
+          refreshFeeds,
+          favServerCatogoriesProvider,
+          newServerCatogoriesProvider,
+          allServerCatogoriesProvider,
+          favFeedsProvider,
+          newFeedsProvider,
+          allFeedsProvider,
+          api,
+          databaseService,
+        ),
+        items: _navBarsItems(theme),
+        margin: EdgeInsets.only(
+          left: MediaQuery.sizeOf(context).width * 0.25,
+          right: MediaQuery.sizeOf(context).width * 0.25,
+          bottom: MediaQuery.sizeOf(context).height * 0.03,
+        ),
+        // hideNavigationBarWhenKeyboardAppears: true,
+        // padding: const EdgeInsets.only(bottom: 8),
+        backgroundColor: theme.colorScheme.secondary,
+        isVisible: true,
+        animationSettings: const NavBarAnimationSettings(
+          navBarItemAnimation: ItemAnimationSettings(
+            // Navigation Bar's items animation properties.
+            duration: Duration(milliseconds: 300),
+            curve: Curves.decelerate,
+          ),
+          screenTransitionAnimation: ScreenTransitionAnimationSettings(
+            // Screen transition animation on change of selected tab.
+            animateTabTransition: true,
+            duration: Duration(milliseconds: 300),
+            screenTransitionAnimationType: ScreenTransitionAnimationType.slide,
+          ),
+        ),
+        // confineToSafeArea: true,
+        navBarHeight: kBottomNavigationBarHeight,
+        navBarStyle: NavBarStyle
+            .style12, // Choose the nav bar style with this property 3, 7, 9, 12,13 are fav
+      ),
+    );
   }
 
-  Future<void> _dialogBuilder(BuildContext context, AppTheme theme) {
+  Future<void> _dialogBuilder(BuildContext context, ThemeData theme) {
     TextEditingController _controller = TextEditingController();
     return showDialog<void>(
       context: context,
@@ -742,8 +766,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                   padding: EdgeInsets.all(20),
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
-                    color: Color(theme.secondaryColor).withAlpha(50),
-                    border: Border.all(width: 0.5, color: Color(theme.textColor).withAlpha(128)),
+                    color: theme.colorScheme.secondary.withAlpha(50),
+                    border:
+                        Border.all(width: 0.5, color: theme.colorScheme.onSurface.withAlpha(128)),
                     borderRadius: const BorderRadius.all(
                       Radius.circular(20),
                     ),
@@ -753,7 +778,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Color(theme.primaryColor),
+                      color: theme.colorScheme.surface,
                     ),
                     'Subscribe',
                   ),
@@ -775,8 +800,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
-                      color: Color(theme.secondaryColor).withAlpha(50),
-                      border: Border.all(width: 0.5, color: Color(theme.textColor).withAlpha(128)),
+                      color: theme.colorScheme.secondary.withAlpha(50),
+                      border:
+                          Border.all(width: 0.5, color: theme.colorScheme.onSurface.withAlpha(128)),
                       borderRadius: const BorderRadius.all(
                         Radius.circular(20),
                       ),
@@ -786,7 +812,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Divider(
-                          color: Color(theme.primaryColor),
+                          color: theme.colorScheme.surface,
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -803,7 +829,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                             // expands: true,
                             decoration: InputDecoration(
                               floatingLabelBehavior: FloatingLabelBehavior.never,
-                              labelStyle: TextStyle(color: Color(theme.textColor).withAlpha(150)),
+                              labelStyle:
+                                  TextStyle(color: theme.colorScheme.onSurface.withAlpha(150)),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(10),
@@ -1045,7 +1072,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     ];
   }
 
-  List<PersistentBottomNavBarItem> _navBarsItems(AppTheme theme) {
+  List<PersistentBottomNavBarItem> _navBarsItems(ThemeData theme) {
     return [
       PersistentBottomNavBarItem(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
@@ -1056,17 +1083,17 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
         //   HapticFeedback.mediumImpact(),
         // },
         activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-        inactiveColorPrimary: Color(theme.textColor),
-        activeColorSecondary: Color(theme.primaryColor),
+        inactiveColorPrimary: theme.colorScheme.onSurface,
+        activeColorSecondary: theme.colorScheme.primary,
       ),
       PersistentBottomNavBarItem(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         opacity: 0.1,
         icon: const Icon(CupertinoIcons.circle),
         title: ("New"),
-        activeColorPrimary: Color(theme.primaryColor),
-        inactiveColorPrimary: Color(theme.textColor),
-        activeColorSecondary: Color(theme.primaryColor),
+        activeColorPrimary: theme.colorScheme.surface,
+        inactiveColorPrimary: theme.colorScheme.onSurface,
+        activeColorSecondary: theme.colorScheme.primary,
         // onPressed: (_) => {
         //   HapticFeedback.mediumImpact(),
         //   // onItem
@@ -1081,8 +1108,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
         icon: const Icon(CupertinoIcons.line_horizontal_3_decrease),
         title: ("All"),
         activeColorPrimary: const Color.fromARGB(255, 0, 0, 0),
-        inactiveColorPrimary: Color(theme.textColor),
-        activeColorSecondary: Color(theme.primaryColor),
+        inactiveColorPrimary: theme.colorScheme.onSurface,
+        activeColorSecondary: theme.colorScheme.primary,
         // onPressed: (_) => {
         //   HapticFeedback.mediumImpact(),
         // },
